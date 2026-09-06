@@ -1,44 +1,70 @@
-﻿.dashboard-feature {
+.dashboard-feature {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-lg);
 
-  .metrics-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: var(--spacing-md);
+  .metric-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
 
-    .metric-card {
+    .metric-label {
+      font-size: var(--font-size-small);
+      color: var(--text-secondary);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .metric-value-row {
       display: flex;
-      flex-direction: column;
-      gap: var(--spacing-xs);
+      align-items: center;
+      justify-content: space-between;
+      margin: var(--spacing-xs) 0;
 
-      .metric-label {
-        font-size: var(--font-size-small);
-        color: var(--text-secondary);
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
+      .metric-value {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--primary-color);
       }
+    }
 
-      .metric-value-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin: var(--spacing-xs) 0;
+    .metric-desc {
+      font-size: var(--font-size-small);
+      color: var(--text-muted);
+      margin: 0;
+    }
+  }
 
-        .metric-value {
-          font-size: 24px;
-          font-weight: 700;
-          color: var(--primary-color);
-        }
-      }
+  .card-snapshot-widget {
+    background: linear-gradient(135deg, #f8f2f6 0%, #ffffff 100%);
+    border: 1px solid var(--border-color);
 
-      .metric-desc {
-        font-size: var(--font-size-small);
-        color: var(--text-muted);
-        margin: 0;
-      }
+    .brand-badge {
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--primary-color);
+    }
+
+    .card-ref-number {
+      color: var(--primary-dark);
+      letter-spacing: 0.05em;
+    }
+  }
+
+  .table {
+    font-size: var(--font-size-body);
+
+    th {
+      font-weight: 600;
+      color: var(--text-secondary);
+      border-top: none;
+    }
+
+    td {
+      vertical-align: middle;
+      padding: 0.75rem 0.5rem;
     }
   }
 

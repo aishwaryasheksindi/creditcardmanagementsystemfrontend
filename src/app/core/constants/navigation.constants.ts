@@ -1,4 +1,4 @@
-﻿import { NavItem } from '../models/nav-item.model';
+import { NavItem } from '../models/nav-item.model';
 
 export const NAVIGATION_ITEMS: NavItem[] = [
   {
@@ -27,42 +27,42 @@ export const NAVIGATION_ITEMS: NavItem[] = [
     label: 'Transactions',
     route: '/app/transactions',
     icon: 'receipt',
-    roles: ['ADMIN', 'BANK_OFFICER', 'CUSTOMER']
+    roles: ['ADMIN', 'BANK_OFFICER']
   },
   {
     id: 'payments',
     label: 'Payments',
     route: '/app/payments',
     icon: 'payment',
-    roles: ['ADMIN', 'BANK_OFFICER', 'CUSTOMER']
+    roles: ['ADMIN', 'BANK_OFFICER']
   },
   {
     id: 'statements',
     label: 'Statements',
     route: '/app/statements',
     icon: 'document',
-    roles: ['ADMIN', 'BANK_OFFICER', 'CUSTOMER']
+    roles: ['ADMIN', 'BANK_OFFICER']
   },
   {
     id: 'rewards',
     label: 'Rewards',
     route: '/app/rewards',
     icon: 'gift',
-    roles: ['ADMIN', 'CUSTOMER']
+    roles: ['ADMIN']
   },
   {
     id: 'emi',
     label: 'EMI',
     route: '/app/emi',
     icon: 'calendar',
-    roles: ['ADMIN', 'BANK_OFFICER', 'CUSTOMER']
+    roles: ['ADMIN', 'BANK_OFFICER']
   },
   {
     id: 'disputes',
     label: 'Disputes',
     route: '/app/disputes',
     icon: 'alert-circle',
-    roles: ['ADMIN', 'CUSTOMER_SERVICE_AGENT', 'CUSTOMER']
+    roles: ['ADMIN', 'CUSTOMER_SERVICE_AGENT']
   },
   {
     id: 'fraud',

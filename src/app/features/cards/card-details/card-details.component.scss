@@ -1,0 +1,64 @@
+.card-details-feature {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+
+  .credit-card-visual {
+    background: linear-gradient(135deg, #5c2d56 0%, #3f1d3b 100%);
+    box-shadow: var(--shadow-md);
+
+    .tracking-wider {
+      letter-spacing: 0.08em;
+    }
+
+    .sim-chip {
+      width: 44px;
+      height: 32px;
+      background: linear-gradient(135deg, #d8bf84 0%, #c2a662 100%);
+      border-radius: 6px;
+      border: 1px solid #b39550;
+      position: relative;
+
+      &::after {
+        content: '';
+        position: absolute;
+        top: 8px;
+        left: 0;
+        right: 0;
+        bottom: 8px;
+        border-top: 1px solid rgba(0, 0, 0, 0.25);
+        border-bottom: 1px solid rgba(0, 0, 0, 0.25);
+      }
+    }
+  }
+
+  .spec-box {
+    background-color: var(--surface-color);
+    border-color: var(--border-color);
+
+    .spec-label {
+      font-size: var(--font-size-small);
+      letter-spacing: 0.02em;
+    }
+
+    .spec-val {
+      display: inline-block;
+      margin-top: 2px;
+    }
+  }
+
+  .table {
+    font-size: var(--font-size-body);
+
+    th {
+      font-weight: 600;
+      color: var(--text-secondary);
+      border-top: none;
+    }
+
+    td {
+      vertical-align: middle;
+      padding: 0.75rem 0.5rem;
+    }
+  }
+}

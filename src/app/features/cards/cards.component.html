@@ -1,16 +1,103 @@
-﻿<div class="cards-feature">
+<div class="cards-feature container-fluid px-0">
   <app-page-header
-    title="Credit Cards"
-    subtitle="Card issuance, activation, status controls, and credit limit management."
-    badgeText="Portfolio">
+    title="My Cards"
+    subtitle="View and manage your credit cards, available limits, and status controls."
+    badgeText="Credit Cards">
+    <div header-actions>
+      <button type="button" class="btn btn-secondary btn-sm d-inline-flex align-items-center gap-2" (click)="loadCards()" [disabled]="isLoading">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+        </svg>
+        Refresh
+      </button>
+    </div>
   </app-page-header>
 
-  <app-card-container [borderAccent]="true" title="Credit Cards Overview">
-    <app-empty-state
-      title="Credit Cards Module Ready"
-      message="This foundation module is established and routing is operational. Integration with Spring Boot backend services will occur in subsequent phases."
-      actionLabel="View Dashboard"
-      (actionClicked)="false">
-    </app-empty-state>
-  </app-card-container>
+  <!-- Loading State -->
+  <div class="my-4" *ngIf="isLoading">
+    <app-loading-spinner message="Loading your credit cards..."></app-loading-spinner>
+  </div>
+
+  <!-- Error State -->
+  <div class="my-4" *ngIf="errorMessage && !isLoading">
+    <app-error-state
+      title="Unable to Load Cards"
+      [message]="errorMessage"
+      (retry)="loadCards()">
+    </app-error-state>
+  </div>
+
+  <!-- Cards List Content -->
+  <div *ngIf="!isLoading && !errorMessage">
+    <!-- Empty State -->
+    <div *ngIf="cards.length === 0" class="my-4">
+      <app-card-container [borderAccent]="true">
+        <app-empty-state
+          title="No Cards"
+          message="No cards are currently associated with your account."
+          actionLabel="Go to Dashboard"
+          (actionClicked)="goToDashboard()">
+        </app-empty-state>
+      </app-card-container>
+    </div>
+
+    <!-- Cards Grid -->
+    <div *ngIf="cards.length > 0" class="row g-4">
+      <div class="col-12 col-md-6 col-xl-4" *ngFor="let card of cards">
+        <div class="credit-card-item h-100 d-flex flex-column justify-content-between p-4 rounded-4 shadow-sm" (click)="viewCardDetails(card.cardId)">
+          <!-- Top Row: Chip & Brand & Status -->
+          <div>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div class="d-flex align-items-center gap-2">
+                <span class="card-brand-label fw-bold">CardNest</span>
+                <span class="badge bg-light text-dark border">{{ card.cardTypeId }}</span>
+              </div>
+              <span class="badge" [ngClass]="getCardStatusBadge(card.cardStatus)">
+                {{ card.cardStatus }}
+              </span>
+            </div>
+
+            <!-- Chip visual -->
+            <div class="sim-chip mb-3"></div>
+
+            <!-- Card Reference Token (No fake 16-digit card number) -->
+            <div class="card-ref-display mb-3">
+              <span class="text-muted small d-block mb-1">Card Reference Token</span>
+              <div class="card-token font-monospace fs-5 fw-bold">{{ card.cardReference }}</div>
+            </div>
+          </div>
+
+          <!-- Bottom: Limits, Expiry, and Action -->
+          <div>
+            <div class="row g-2 pt-3 border-top border-light-subtle mb-3">
+              <div class="col-6">
+                <span class="metric-mini-label text-muted d-block small">Available Limit</span>
+                <strong class="text-dark">{{ card.availableLimit | currency:'INR':'symbol':'1.0-0' }}</strong>
+              </div>
+              <div class="col-6 text-end">
+                <span class="metric-mini-label text-muted d-block small">Credit Limit</span>
+                <strong class="text-dark">{{ card.creditLimit | currency:'INR':'symbol':'1.0-0' }}</strong>
+              </div>
+              <div class="col-6 mt-2">
+                <span class="metric-mini-label text-muted d-block small">Expires</span>
+                <span class="font-monospace text-secondary">{{ card.expiryDate | date:'MM/yy' }}</span>
+              </div>
+              <div class="col-6 mt-2 text-end">
+                <span class="metric-mini-label text-muted d-block small">Billing Cycle</span>
+                <span class="text-secondary">Day {{ card.billingCycle }}</span>
+              </div>
+            </div>
+
+            <button type="button" class="btn btn-outline-primary btn-sm w-100 d-flex align-items-center justify-content-center gap-2" (click)="viewCardDetails(card.cardId); $event.stopPropagation()">
+              View Details & Controls
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>

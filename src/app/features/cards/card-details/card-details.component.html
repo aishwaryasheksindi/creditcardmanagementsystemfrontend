@@ -1,0 +1,270 @@
+<div class="card-details-feature container-fluid px-0">
+  <!-- Top Navigation & Header -->
+  <div class="mb-3">
+    <button type="button" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2" (click)="goBack()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="19" y1="12" x2="5" y2="12"></line>
+        <polyline points="12 19 5 12 12 5"></polyline>
+      </svg>
+      Back to My Cards
+    </button>
+  </div>
+
+  <app-page-header
+    [title]="card ? 'Card Details: ' + card.cardReference : 'Card Details'"
+    subtitle="Comprehensive card information, status controls, and recent activity."
+    badgeText="Card Management">
+    <div header-actions *ngIf="card && isCustomer">
+      <!-- Only Block Card is available for CUSTOMER role; no Unblock/Replace buttons -->
+      <button
+        *ngIf="card.cardStatus !== 'BLOCKED'"
+        type="button"
+        class="btn btn-danger btn-sm d-inline-flex align-items-center gap-2"
+        (click)="openBlockModal()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+        </svg>
+        Block Card
+      </button>
+
+      <span *ngIf="card.cardStatus === 'BLOCKED'" class="badge bg-danger-subtle text-danger border border-danger-subtle py-2 px-3 fs-6">
+        Card is Blocked
+      </span>
+    </div>
+  </app-page-header>
+
+  <!-- Success Notification -->
+  <div *ngIf="blockSuccessMessage" class="alert alert-success alert-dismissible fade show my-3" role="alert">
+    <strong>Success!</strong> {{ blockSuccessMessage }}
+    <button type="button" class="btn-close" (click)="blockSuccessMessage = null" aria-label="Close"></button>
+  </div>
+
+  <!-- Loading State -->
+  <div class="my-4" *ngIf="isLoadingCard">
+    <app-loading-spinner message="Loading card details..."></app-loading-spinner>
+  </div>
+
+  <!-- Error State -->
+  <div class="my-4" *ngIf="cardErrorMessage && !isLoadingCard">
+    <app-error-state
+      title="Unable to Load Card"
+      [message]="cardErrorMessage"
+      (retry)="loadCardDetails(cardId!)">
+    </app-error-state>
+  </div>
+
+  <!-- Main Card Details View -->
+  <div *ngIf="card && !isLoadingCard" class="d-flex flex-column gap-4">
+    <!-- Card Summary Container -->
+    <app-card-container title="Card Information" [borderAccent]="true">
+      <div class="row g-4 align-items-center">
+        <!-- Visual Card Representation -->
+        <div class="col-12 col-lg-5 col-xl-4">
+          <div class="credit-card-visual p-4 rounded-4 shadow-sm text-white">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <span class="fw-bold tracking-wider fs-6">CardNest</span>
+              <span class="badge" [ngClass]="getCardStatusBadge(card.cardStatus)">{{ card.cardStatus }}</span>
+            </div>
+            
+            <div class="sim-chip my-3"></div>
+
+            <div class="mb-4">
+              <span class="small text-white-50 d-block">Card Reference Token</span>
+              <span class="fs-5 font-monospace fw-bold tracking-wider">{{ card.cardReference }}</span>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-end">
+              <div>
+                <span class="small text-white-50 d-block">Card Type</span>
+                <span class="fw-semibold text-light">{{ card.cardTypeId }}</span>
+              </div>
+              <div class="text-end">
+                <span class="small text-white-50 d-block">Expires</span>
+                <span class="font-monospace fw-bold text-light">{{ card.expiryDate | date:'MM/yy' }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Specifications & Limits Grid -->
+        <div class="col-12 col-lg-7 col-xl-8">
+          <div class="row g-3">
+            <div class="col-6 col-md-4">
+              <div class="spec-box p-3 rounded border">
+                <span class="spec-label text-muted small d-block">Available Limit</span>
+                <span class="spec-val fs-5 fw-bold text-success">{{ card.availableLimit | currency:'INR':'symbol':'1.2-2' }}</span>
+              </div>
+            </div>
+            <div class="col-6 col-md-4">
+              <div class="spec-box p-3 rounded border">
+                <span class="spec-label text-muted small d-block">Credit Limit</span>
+                <span class="spec-val fs-5 fw-bold text-dark">{{ card.creditLimit | currency:'INR':'symbol':'1.2-2' }}</span>
+              </div>
+            </div>
+            <div class="col-6 col-md-4">
+              <div class="spec-box p-3 rounded border">
+                <span class="spec-label text-muted small d-block">Card Status</span>
+                <span class="spec-val">
+                  <span class="badge" [ngClass]="getCardStatusBadge(card.cardStatus)">{{ card.cardStatus }}</span>
+                </span>
+              </div>
+            </div>
+            <div class="col-6 col-md-4">
+              <div class="spec-box p-3 rounded border">
+                <span class="spec-label text-muted small d-block">Billing Cycle</span>
+                <span class="spec-val fw-semibold text-dark">Day {{ card.billingCycle }} of month</span>
+              </div>
+            </div>
+            <div class="col-6 col-md-4">
+              <div class="spec-box p-3 rounded border">
+                <span class="spec-label text-muted small d-block">Interest Rate</span>
+                <span class="spec-val fw-semibold text-dark">{{ card.interestRate }}% APR</span>
+              </div>
+            </div>
+            <div class="col-6 col-md-4">
+              <div class="spec-box p-3 rounded border">
+                <span class="spec-label text-muted small d-block">Annual Fee</span>
+                <span class="spec-val fw-semibold text-dark">{{ card.annualFee | currency:'INR':'symbol':'1.2-2' }}</span>
+              </div>
+            </div>
+            <div class="col-6 col-md-6">
+              <div class="spec-box p-3 rounded border">
+                <span class="spec-label text-muted small d-block">Issuance Date</span>
+                <span class="spec-val fw-medium text-secondary">{{ card.issuanceDate | date:'mediumDate' }}</span>
+              </div>
+            </div>
+            <div class="col-6 col-md-6">
+              <div class="spec-box p-3 rounded border">
+                <span class="spec-label text-muted small d-block">Expiry Date</span>
+                <span class="spec-val fw-medium text-secondary">{{ card.expiryDate | date:'mediumDate' }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </app-card-container>
+
+    <!-- Recent Activity (Transactions) Container -->
+    <app-card-container title="Recent Activity" subtitle="Historical transaction feed for this card">
+      <div *ngIf="isLoadingTransactions" class="py-3">
+        <app-loading-spinner message="Loading transactions..."></app-loading-spinner>
+      </div>
+
+      <div *ngIf="transactionErrorMessage && !isLoadingTransactions" class="alert alert-warning my-2">
+        {{ transactionErrorMessage }}
+      </div>
+
+      <div *ngIf="!isLoadingTransactions && transactions.length === 0" class="py-3">
+        <app-empty-state
+          title="No Transactions"
+          message="No transactions recorded for this card yet.">
+        </app-empty-state>
+      </div>
+
+      <div *ngIf="!isLoadingTransactions && transactions.length > 0" class="table-responsive">
+        <table class="table align-middle table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th scope="col">Date</th>
+              <th scope="col">Transaction ID</th>
+              <th scope="col">Type</th>
+              <th scope="col">Location</th>
+              <th scope="col">Status</th>
+              <th scope="col" class="text-end">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let txn of transactions">
+              <td class="text-nowrap">
+                <div class="fw-medium">{{ txn.transactionDate | date:'mediumDate' }}</div>
+                <small class="text-muted">{{ txn.transactionDate | date:'shortTime' }}</small>
+              </td>
+              <td class="font-monospace small text-secondary">{{ txn.transactionId }}</td>
+              <td>
+                <span class="fw-semibold">{{ txn.transactionType }}</span>
+              </td>
+              <td>
+                <span class="text-muted small">{{ txn.transactionLocation || '—' }}</span>
+              </td>
+              <td>
+                <span class="badge" [ngClass]="getTransactionStatusBadge(txn.transactionStatus)">
+                  {{ txn.transactionStatus }}
+                </span>
+              </td>
+              <td class="text-end fw-bold font-monospace">
+                {{ txn.amount | currency:txn.currency:'symbol':'1.2-2' }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </app-card-container>
+  </div>
+</div>
+
+<!-- Block Card Confirmation Modal -->
+<ng-template #blockModal let-modal>
+  <div class="modal-header border-bottom">
+    <h5 class="modal-title d-flex align-items-center gap-2 text-danger">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+      Block Credit Card
+    </h5>
+    <button type="button" class="btn-close" (click)="dismissModal()" aria-label="Close"></button>
+  </div>
+
+  <div class="modal-body">
+    <p class="text-secondary mb-3">
+      Are you sure you want to block card <strong>{{ card?.cardReference }}</strong>?
+      This action will immediately disable further charges and authorization requests on this card.
+    </p>
+
+    <div *ngIf="blockErrorMessage" class="alert alert-danger py-2 px-3 small mb-3">
+      {{ blockErrorMessage }}
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label fw-semibold">Reason for Blocking <span class="text-danger">*</span></label>
+      <div class="d-flex flex-column gap-2 mb-3">
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="blockReasonRadio" id="reason1" value="Suspected unauthorized activity" [(ngModel)]="blockReason">
+          <label class="form-check-label" for="reason1">Suspected unauthorized activity</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="blockReasonRadio" id="reason2" value="Lost or misplaced card" [(ngModel)]="blockReason">
+          <label class="form-check-label" for="reason2">Lost or misplaced card</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="blockReasonRadio" id="reason3" value="Stolen card" [(ngModel)]="blockReason">
+          <label class="form-check-label" for="reason3">Stolen card</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="blockReasonRadio" id="reason4" value="Temporary security hold" [(ngModel)]="blockReason">
+          <label class="form-check-label" for="reason4">Temporary security hold</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="blockReasonRadio" id="reason5" value="Other" [(ngModel)]="blockReason">
+          <label class="form-check-label" for="reason5">Other reason</label>
+        </div>
+      </div>
+
+      <div *ngIf="blockReason === 'Other'" class="mt-2">
+        <input type="text" class="form-control" [(ngModel)]="customReason" placeholder="Please specify the reason..." maxlength="120">
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-footer border-top">
+    <button type="button" class="btn btn-secondary" (click)="dismissModal()" [disabled]="isBlocking">
+      Cancel
+    </button>
+    <button type="button" class="btn btn-danger d-inline-flex align-items-center gap-2" (click)="confirmBlock()" [disabled]="isBlocking">
+      <span *ngIf="isBlocking" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+      {{ isBlocking ? 'Blocking Card...' : 'Confirm Block' }}
+    </button>
+  </div>
+</ng-template>
