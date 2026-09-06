@@ -1,4 +1,4 @@
-﻿.app-navbar {
+.app-navbar {
   height: var(--navbar-height);
   background-color: var(--surface-color);
   border-bottom: 1px solid var(--border-color);
@@ -123,6 +123,10 @@
         @media (max-width: 576px) {
           display: none;
         }
+      }
+
+      .dropdown-menu {
+        min-width: 240px;
       }
     }
   }

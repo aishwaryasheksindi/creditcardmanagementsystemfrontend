@@ -1,0 +1,234 @@
+<div class="profile-feature">
+  <app-page-header
+    title="My Profile"
+    subtitle="View your account information, update contact details, and manage your password."
+    badgeText="Account">
+  </app-page-header>
+
+  <!-- Initial Loading State -->
+  <div class="my-4" *ngIf="isLoadingProfile">
+    <app-loading-spinner message="Loading profile details..."></app-loading-spinner>
+  </div>
+
+  <!-- Initial Loading Error State -->
+  <div class="my-4" *ngIf="profileErrorMessage && !isLoadingProfile && !profile">
+    <app-error-state
+      title="Unable to Load Profile"
+      [message]="profileErrorMessage"
+      (retry)="loadProfile()">
+    </app-error-state>
+  </div>
+
+  <div class="profile-content" *ngIf="profile">
+    <!-- View Section: Profile Information Card -->
+    <app-card-container [borderAccent]="true" title="Profile Information" subtitle="Read-only account identity details associated with your credentials.">
+      <div class="profile-identity-banner mb-4 d-flex align-items-center gap-3 p-3 rounded">
+        <div class="profile-avatar d-flex align-items-center justify-content-center">
+          <span>{{ (profile.username || 'U').substring(0, 2).toUpperCase() }}</span>
+        </div>
+        <div class="profile-headline">
+          <h4 class="mb-0 fw-bold text-primary">{{ profile.actualName || profile.username }}</h4>
+          <div class="d-flex align-items-center gap-2 mt-1">
+            <span class="badge bg-primary text-white">{{ profile.roleName }}</span>
+            <span class="badge bg-secondary-subtle text-secondary border">{{ getAccountTypeLabel() }}</span>
+            <span class="text-muted small">@{{ profile.username }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-12 col-md-4">
+          <div class="detail-item">
+            <span class="detail-label">Full Name</span>
+            <span class="detail-value fw-semibold">{{ profile.actualName || '—' }}</span>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-4">
+          <div class="detail-item">
+            <span class="detail-label">Username</span>
+            <span class="detail-value font-monospace">{{ profile.username }}</span>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-4">
+          <div class="detail-item">
+            <span class="detail-label">Assigned Role</span>
+            <span class="detail-value">{{ profile.roleName }}</span>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-6">
+          <div class="detail-item">
+            <span class="detail-label">Registered Email</span>
+            <span class="detail-value">{{ profile.email || '—' }}</span>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-6">
+          <div class="detail-item">
+            <span class="detail-label">Registered Phone Number</span>
+            <span class="detail-value">{{ profile.phoneNumber || '—' }}</span>
+          </div>
+        </div>
+      </div>
+    </app-card-container>
+
+    <!-- Two Forms Below -->
+    <div class="row g-4 mt-2">
+      <!-- Edit Contact Details Form -->
+      <div class="col-12 col-lg-6">
+        <app-card-container title="Edit Contact Details" subtitle="Update your primary email address and contact phone number.">
+          <!-- Success Message -->
+          <div class="alert alert-success d-flex align-items-center gap-2 mb-3" *ngIf="detailsSuccessMessage">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+            <span>{{ detailsSuccessMessage }}</span>
+          </div>
+
+          <!-- Error Message -->
+          <div class="alert alert-danger d-flex align-items-center gap-2 mb-3" *ngIf="detailsErrorMessage">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            <span>{{ detailsErrorMessage }}</span>
+          </div>
+
+          <form [formGroup]="editDetailsForm" (ngSubmit)="onUpdateDetails()">
+            <div class="form-group mb-3">
+              <label for="profileEmail" class="form-label">Email Address *</label>
+              <input
+                type="email"
+                id="profileEmail"
+                class="form-control"
+                formControlName="email"
+                placeholder="name@example.com"
+                [class.is-invalid]="detailsControls['email'].invalid && detailsControls['email'].touched" />
+              <div class="form-error" *ngIf="detailsControls['email'].touched && detailsControls['email'].errors?.['required']">
+                Email address is required.
+              </div>
+              <div class="form-error" *ngIf="detailsControls['email'].touched && detailsControls['email'].errors?.['email']">
+                Please enter a valid email address.
+              </div>
+            </div>
+
+            <div class="form-group mb-4">
+              <label for="profilePhone" class="form-label">Phone Number</label>
+              <input
+                type="tel"
+                id="profilePhone"
+                class="form-control"
+                formControlName="phoneNumber"
+                maxlength="20"
+                placeholder="+1-555-0199"
+                [class.is-invalid]="detailsControls['phoneNumber'].invalid && detailsControls['phoneNumber'].touched" />
+              <div class="form-hint">Maximum 20 characters (numbers, dashes, plus sign).</div>
+              <div class="form-error" *ngIf="detailsControls['phoneNumber'].touched && detailsControls['phoneNumber'].errors?.['maxlength']">
+                Phone number cannot exceed 20 characters.
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-end">
+              <button
+                type="submit"
+                class="btn btn-primary"
+                [disabled]="isUpdatingDetails || editDetailsForm.invalid">
+                <span class="spinner-border spinner-border-sm me-2" *ngIf="isUpdatingDetails"></span>
+                <span>{{ isUpdatingDetails ? 'Saving...' : 'Save Changes' }}</span>
+              </button>
+            </div>
+          </form>
+        </app-card-container>
+      </div>
+
+      <!-- Change Password Form -->
+      <div class="col-12 col-lg-6">
+        <app-card-container title="Change Password" subtitle="Ensure your account is protected with a strong, unique password.">
+          <!-- Success Message -->
+          <div class="alert alert-success d-flex align-items-center gap-2 mb-3" *ngIf="passwordSuccessMessage">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+            <span>{{ passwordSuccessMessage }}</span>
+          </div>
+
+          <!-- Error Message -->
+          <div class="alert alert-danger d-flex align-items-center gap-2 mb-3" *ngIf="passwordErrorMessage">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            <span>{{ passwordErrorMessage }}</span>
+          </div>
+
+          <form [formGroup]="passwordForm" (ngSubmit)="onChangePassword()">
+            <div class="form-group mb-3">
+              <label for="currentPassword" class="form-label">Current Password *</label>
+              <input
+                type="password"
+                id="currentPassword"
+                class="form-control"
+                formControlName="currentPassword"
+                placeholder="Enter current password"
+                [class.is-invalid]="passwordControls['currentPassword'].invalid && passwordControls['currentPassword'].touched" />
+              <div class="form-error" *ngIf="passwordControls['currentPassword'].touched && passwordControls['currentPassword'].errors?.['required']">
+                Current password is required.
+              </div>
+            </div>
+
+            <div class="form-group mb-3">
+              <label for="newPassword" class="form-label">New Password *</label>
+              <input
+                type="password"
+                id="newPassword"
+                class="form-control"
+                formControlName="newPassword"
+                placeholder="Minimum 8 characters"
+                [class.is-invalid]="passwordControls['newPassword'].invalid && passwordControls['newPassword'].touched" />
+              <div class="form-hint">Must be between 8 and 100 characters long.</div>
+              <div class="form-error" *ngIf="passwordControls['newPassword'].touched && passwordControls['newPassword'].errors?.['required']">
+                New password is required.
+              </div>
+              <div class="form-error" *ngIf="passwordControls['newPassword'].touched && passwordControls['newPassword'].errors?.['minlength']">
+                New password must be at least 8 characters.
+              </div>
+            </div>
+
+            <div class="form-group mb-4">
+              <label for="confirmNewPassword" class="form-label">Confirm New Password *</label>
+              <input
+                type="password"
+                id="confirmNewPassword"
+                class="form-control"
+                formControlName="confirmNewPassword"
+                placeholder="Re-enter new password"
+                [class.is-invalid]="(passwordControls['confirmNewPassword'].invalid && passwordControls['confirmNewPassword'].touched) || hasPasswordMismatch" />
+              <div class="form-error" *ngIf="passwordControls['confirmNewPassword'].touched && passwordControls['confirmNewPassword'].errors?.['required']">
+                Please confirm your new password.
+              </div>
+              <div class="form-error" *ngIf="hasPasswordMismatch">
+                New password and confirmation password do not match.
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-end">
+              <button
+                type="submit"
+                class="btn btn-primary"
+                [disabled]="isChangingPassword || passwordForm.invalid">
+                <span class="spinner-border spinner-border-sm me-2" *ngIf="isChangingPassword"></span>
+                <span>{{ isChangingPassword ? 'Updating...' : 'Update Password' }}</span>
+              </button>
+            </div>
+          </form>
+        </app-card-container>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,4 +1,4 @@
-﻿<header class="app-navbar d-flex align-items-center justify-content-between px-3 px-md-4 sticky-top">
+<header class="app-navbar d-flex align-items-center justify-content-between px-3 px-md-4 sticky-top">
   <div class="navbar-left d-flex align-items-center gap-3">
     <button
       type="button"
@@ -51,16 +51,26 @@
           <span>{{ (user.username || 'U').substring(0, 2).toUpperCase() }}</span>
         </div>
         <div class="user-details d-none d-sm-flex flex-column">
-          <span class="user-name fw-semibold">{{ user.username }}</span>
+          <span class="user-name fw-semibold">{{ (profileService.currentProfile?.actualName) || user.username }}</span>
           <span class="user-role">{{ user.roleName }}</span>
         </div>
       </button>
 
       <div ngbDropdownMenu aria-labelledby="userMenuDropdown" class="dropdown-menu-end shadow-sm">
-        <div class="px-3 py-2 border-bottom">
-          <p class="mb-0 fw-semibold">{{ user.username }}</p>
-          <small class="text-muted">Role: {{ user.roleName }}</small>
+        <div class="px-3 py-2">
+          <p class="mb-0 fw-semibold">{{ (profileService.profile$ | async)?.actualName || user.username }}</p>
+          <small class="text-muted d-block">Username: {{ user.username }}</small>
+          <small class="text-muted d-block">Role: {{ user.roleName }}</small>
         </div>
+        <div class="dropdown-divider"></div>
+        <button ngbDropdownItem routerLink="/app/profile" class="d-flex align-items-center gap-2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+          Update Profile
+        </button>
+        <div class="dropdown-divider"></div>
         <button ngbDropdownItem (click)="onLogout()" class="d-flex align-items-center gap-2 text-danger">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>

@@ -1,4 +1,4 @@
-﻿import { NgModule } from '@angular/core';
+import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { MainLayoutComponent } from './layout/main-layout/main-layout.component';
 import { AuthGuard } from './core/guards/auth.guard';
@@ -91,6 +91,10 @@ const routes: Routes = [
         canActivate: [RoleGuard],
         data: { roles: ['ADMIN'] },
         loadChildren: () => import('./features/admin/admin.module').then(m => m.AdminModule)
+      },
+      {
+        path: 'profile',
+        loadChildren: () => import('./features/profile/profile.module').then(m => m.ProfileModule)
       },
       {
         path: 'access-denied',
