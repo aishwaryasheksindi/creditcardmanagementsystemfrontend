@@ -1,7 +1,14 @@
-﻿import { NgModule } from '@angular/core';
+import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import {
+  NgbModule,
+  NgbDropdownModule,
+  NgbModalModule,
+  NgbTooltipModule,
+  NgbOffcanvasModule
+} from '@ng-bootstrap/ng-bootstrap';
 
 import { LoadingSpinnerComponent } from './components/loading-spinner/loading-spinner.component';
 import { EmptyStateComponent } from './components/empty-state/empty-state.component';
@@ -23,13 +30,23 @@ import { CardContainerComponent } from './components/card-container/card-contain
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
-    RouterModule
+    RouterModule,
+    NgbModule,
+    NgbDropdownModule,
+    NgbModalModule,
+    NgbTooltipModule,
+    NgbOffcanvasModule
   ],
   exports: [
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
     RouterModule,
+    NgbModule,
+    NgbDropdownModule,
+    NgbModalModule,
+    NgbTooltipModule,
+    NgbOffcanvasModule,
     LoadingSpinnerComponent,
     EmptyStateComponent,
     ErrorStateComponent,

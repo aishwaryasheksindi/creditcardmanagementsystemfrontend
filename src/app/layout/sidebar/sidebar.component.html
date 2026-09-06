@@ -1,15 +1,15 @@
-﻿<aside class="app-sidebar" [class.collapsed]="isCollapsed">
+<aside class="app-sidebar" [class.collapsed]="isCollapsed">
   <div class="sidebar-header" *ngIf="!isCollapsed">
     <span class="sidebar-title">NAVIGATION</span>
   </div>
 
-  <nav class="sidebar-nav">
-    <ul class="nav-list">
-      <li *ngFor="let item of navItems" class="nav-item">
+  <nav class="sidebar-nav py-2">
+    <ul class="nav-list list-unstyled m-0 p-0 d-flex flex-column gap-1">
+      <li *ngFor="let item of visibleNavItems" class="nav-item">
         <a
           [routerLink]="item.route"
           routerLinkActive="active"
-          class="nav-link"
+          class="nav-link d-flex align-items-center"
           (click)="onNavClick()"
           [title]="item.label">
           <span class="nav-icon" [ngSwitch]="item.icon">

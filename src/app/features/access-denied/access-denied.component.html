@@ -1,0 +1,28 @@
+﻿<div class="access-denied-container d-flex flex-column align-items-center justify-content-center text-center p-4 p-md-5">
+  <div class="access-denied-card card-surface p-4 p-md-5 d-flex flex-column align-items-center">
+    <div class="shield-icon-wrapper mb-3 d-flex align-items-center justify-content-center">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+    </div>
+
+    <h2 class="access-title mb-2">Access Denied</h2>
+    <p class="access-subtitle text-secondary mb-4">
+      You don't have permission to access this page.
+    </p>
+
+    <p class="access-help text-muted small mb-4">
+      If you require authorization for this banking module, please contact your system administrator.
+    </p>
+
+    <button type="button" class="btn btn-primary d-inline-flex align-items-center gap-2" (click)="onReturn()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="19" y1="12" x2="5" y2="12"></line>
+        <polyline points="12 19 5 12 12 5"></polyline>
+      </svg>
+      Return to Dashboard
+    </button>
+  </div>
+</div>

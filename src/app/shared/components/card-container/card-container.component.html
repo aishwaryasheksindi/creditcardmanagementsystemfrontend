@@ -1,14 +1,14 @@
 ﻿<div class="card-container" [class.border-accent]="borderAccent">
-  <div class="card-container-header" *ngIf="title">
+  <div class="card-container-header d-flex align-items-center justify-content-between p-3" *ngIf="title">
     <div class="header-titles">
-      <h3 class="card-title">{{ title }}</h3>
-      <p class="card-subtitle" *ngIf="subtitle">{{ subtitle }}</p>
+      <h3 class="card-title mb-0">{{ title }}</h3>
+      <p class="card-subtitle text-secondary mb-0 mt-1" *ngIf="subtitle">{{ subtitle }}</p>
     </div>
     <div class="card-actions">
       <ng-content select="[card-actions]"></ng-content>
     </div>
   </div>
-  <div class="card-container-body">
+  <div class="card-container-body p-3">
     <ng-content></ng-content>
   </div>
   <div class="card-container-footer">

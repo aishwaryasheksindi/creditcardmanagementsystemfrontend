@@ -1,5 +1,5 @@
-﻿<header class="app-navbar">
-  <div class="navbar-left">
+﻿<header class="app-navbar d-flex align-items-center justify-content-between px-3 px-md-4 sticky-top">
+  <div class="navbar-left d-flex align-items-center gap-3">
     <button
       type="button"
       class="nav-icon-btn hamburger-btn"
@@ -13,27 +13,27 @@
       </svg>
     </button>
 
-    <div class="brand-container" routerLink="/app/dashboard">
-      <div class="brand-logo">
-        <svg width="26" height="26" viewBox="0 0 28 28" fill="none">
+    <div class="brand-container d-flex align-items-center gap-2" routerLink="/app/dashboard">
+      <div class="brand-logo d-flex align-items-center justify-content-center">
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
           <rect width="28" height="28" rx="8" fill="#5C2D56"/>
           <path d="M7 11C7 9.89543 7.89543 9 9 9H19C20.1046 9 21 9.89543 21 11V17C21 18.1046 20.1046 19 19 19H9C7.89543 19 7 18.1046 7 17V11Z" stroke="#FDF8F0" stroke-width="1.8"/>
           <line x1="7" y1="12.5" x2="21" y2="12.5" stroke="#FDF8F0" stroke-width="1.5"/>
           <circle cx="11" cy="16" r="1.2" fill="#FDF8F0"/>
         </svg>
       </div>
-      <div class="brand-text">
-        <span class="brand-title">CardNest</span>
-        <span class="brand-subtitle">AI-Powered Credit Card Management &amp; Fraud Detection</span>
+      <div class="brand-text d-flex flex-column">
+        <span class="brand-title fw-bold">CardNest</span>
+        <span class="brand-subtitle d-none d-md-inline text-secondary">AI-Powered Credit Card Management &amp; Fraud Detection</span>
       </div>
     </div>
   </div>
 
-  <div class="navbar-right">
+  <div class="navbar-right d-flex align-items-center gap-3">
     <!-- Notification Bell -->
     <button
       type="button"
-      class="nav-icon-btn notification-bell-btn"
+      class="nav-icon-btn notification-bell-btn position-relative"
       (click)="onToggleNotifications()"
       aria-label="Notifications"
       title="Open Notifications">
@@ -44,14 +44,31 @@
       <span class="notification-badge" *ngIf="unreadNotificationCount > 0">{{ unreadNotificationCount }}</span>
     </button>
 
-    <!-- User Profile Area Placeholder -->
-    <div class="user-profile-widget" *ngIf="authService.currentUser$ | async as user">
-      <div class="user-avatar" aria-hidden="true">
-        <span>AM</span>
-      </div>
-      <div class="user-details">
-        <span class="user-name">{{ user.fullName }}</span>
-        <span class="user-role">{{ user.role }}</span>
+    <!-- User Profile Area with NgbDropdown & Logout -->
+    <div class="user-profile-widget d-flex align-items-center gap-2" *ngIf="authService.currentUser$ | async as user" ngbDropdown>
+      <button class="btn btn-sm d-flex align-items-center gap-2 border-0 bg-transparent p-0 text-start" id="userMenuDropdown" ngbDropdownToggle>
+        <div class="user-avatar d-flex align-items-center justify-content-center" aria-hidden="true">
+          <span>{{ (user.username || 'U').substring(0, 2).toUpperCase() }}</span>
+        </div>
+        <div class="user-details d-none d-sm-flex flex-column">
+          <span class="user-name fw-semibold">{{ user.username }}</span>
+          <span class="user-role">{{ user.roleName }}</span>
+        </div>
+      </button>
+
+      <div ngbDropdownMenu aria-labelledby="userMenuDropdown" class="dropdown-menu-end shadow-sm">
+        <div class="px-3 py-2 border-bottom">
+          <p class="mb-0 fw-semibold">{{ user.username }}</p>
+          <small class="text-muted">Role: {{ user.roleName }}</small>
+        </div>
+        <button ngbDropdownItem (click)="onLogout()" class="d-flex align-items-center gap-2 text-danger">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+          Sign Out
+        </button>
       </div>
     </div>
   </div>

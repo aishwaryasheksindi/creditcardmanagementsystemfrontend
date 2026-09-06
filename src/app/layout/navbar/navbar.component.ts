@@ -23,4 +23,8 @@ export class NavbarComponent {
   onToggleNotifications(): void {
     this.toggleNotifications.emit();
   }
+
+  onLogout(): void {
+    this.authService.logout();
+  }
 }

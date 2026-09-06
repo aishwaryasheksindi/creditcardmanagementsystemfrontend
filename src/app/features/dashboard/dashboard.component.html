@@ -1,10 +1,10 @@
-﻿<div class="dashboard-feature">
+﻿<div class="dashboard-feature container-fluid px-0">
   <app-page-header
     title="Executive Dashboard"
     subtitle="Overview of credit operations, fraud telemetry, and portfolio status."
     badgeText="Live System">
     <div header-actions>
-      <button type="button" class="btn btn-secondary btn-sm">
+      <button type="button" class="btn btn-secondary btn-sm d-inline-flex align-items-center gap-2">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polyline points="23 4 23 10 17 10"></polyline>
           <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
@@ -14,44 +14,51 @@
     </div>
   </app-page-header>
 
-  <div class="metrics-grid">
-    <app-card-container [borderAccent]="true">
-      <div class="metric-card">
-        <span class="metric-label">Active Portfolio</span>
-        <div class="metric-value-row">
-          <span class="metric-value">--</span>
-          <span class="badge badge-primary">Awaiting Backend</span>
+  <!-- Bootstrap Grid System for Metric Cards -->
+  <div class="row g-3 g-md-4 mb-4">
+    <div class="col-12 col-md-6 col-xl-4">
+      <app-card-container [borderAccent]="true">
+        <div class="metric-card d-flex flex-column gap-1">
+          <span class="metric-label text-uppercase fw-semibold">Active Portfolio</span>
+          <div class="metric-value-row d-flex align-items-center justify-content-between my-2">
+            <span class="metric-value fs-4 fw-bold">--</span>
+            <span class="badge badge-primary">Awaiting Backend</span>
+          </div>
+          <p class="metric-desc text-secondary mb-0">Connected to Spring Boot API via Core ApiService</p>
         </div>
-        <p class="metric-desc">Connected to Spring Boot API via Core ApiService</p>
-      </div>
-    </app-card-container>
+      </app-card-container>
+    </div>
 
-    <app-card-container [borderAccent]="true">
-      <div class="metric-card">
-        <span class="metric-label">Fraud Telemetry</span>
-        <div class="metric-value-row">
-          <span class="metric-value">Active</span>
-          <span class="badge badge-success">Engine Online</span>
+    <div class="col-12 col-md-6 col-xl-4">
+      <app-card-container [borderAccent]="true">
+        <div class="metric-card d-flex flex-column gap-1">
+          <span class="metric-label text-uppercase fw-semibold">Fraud Telemetry</span>
+          <div class="metric-value-row d-flex align-items-center justify-content-between my-2">
+            <span class="metric-value fs-4 fw-bold">Active</span>
+            <span class="badge badge-success">Engine Online</span>
+          </div>
+          <p class="metric-desc text-secondary mb-0">AI Risk Monitoring module configured</p>
         </div>
-        <p class="metric-desc">AI Risk Monitoring module configured</p>
-      </div>
-    </app-card-container>
+      </app-card-container>
+    </div>
 
-    <app-card-container [borderAccent]="true">
-      <div class="metric-card">
-        <span class="metric-label">Settlement Engine</span>
-        <div class="metric-value-row">
-          <span class="metric-value">Synchronized</span>
-          <span class="badge badge-primary">Operational</span>
+    <div class="col-12 col-md-6 col-xl-4">
+      <app-card-container [borderAccent]="true">
+        <div class="metric-card d-flex flex-column gap-1">
+          <span class="metric-label text-uppercase fw-semibold">Settlement Engine</span>
+          <div class="metric-value-row d-flex align-items-center justify-content-between my-2">
+            <span class="metric-value fs-4 fw-bold">Synchronized</span>
+            <span class="badge badge-primary">Operational</span>
+          </div>
+          <p class="metric-desc text-secondary mb-0">Transaction processing pipeline ready</p>
         </div>
-        <p class="metric-desc">Transaction processing pipeline ready</p>
-      </div>
-    </app-card-container>
+      </app-card-container>
+    </div>
   </div>
 
   <div class="content-section">
     <app-card-container title="Quick Navigation & System Modules" subtitle="Enterprise Credit Card Management Features">
-      <p>CardNest is structured with 14 isolated, lazily-loaded feature modules following clean Angular enterprise architecture.</p>
+      <p class="mb-0 text-secondary">CardNest is structured with 14 isolated, lazily-loaded feature modules following clean Angular enterprise architecture.</p>
     </app-card-container>
   </div>
 </div>

@@ -1,11 +1,11 @@
-﻿<div class="layout-container">
+﻿<div class="layout-container d-flex flex-column min-vh-100">
   <app-navbar
     [isSidebarOpen]="!isSidebarCollapsed"
     (toggleSidebar)="toggleSidebar()"
     (toggleNotifications)="toggleNotifications()">
   </app-navbar>
 
-  <div class="layout-body">
+  <div class="layout-body d-flex flex-grow-1 position-relative">
     <!-- Desktop Sidebar -->
     <div class="sidebar-desktop">
       <app-sidebar [isCollapsed]="isSidebarCollapsed"></app-sidebar>
@@ -19,8 +19,8 @@
     </div>
 
     <!-- Main Content Area -->
-    <div class="content-wrapper">
-      <main class="main-content" role="main">
+    <div class="content-wrapper d-flex flex-column flex-grow-1">
+      <main class="main-content flex-grow-1 container-xl py-4 px-3 px-md-4" role="main">
         <router-outlet></router-outlet>
       </main>
       <app-footer></app-footer>

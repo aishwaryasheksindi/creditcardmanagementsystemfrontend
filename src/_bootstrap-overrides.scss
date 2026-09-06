@@ -1,0 +1,73 @@
+﻿/* ==========================================================================
+   CardNest - Bootstrap 5 SCSS Variable Overrides
+   Themed to match the CardNest Mauve/Plum & Soft Cream Design Tokens
+   ========================================================================== */
+
+// Brand & Theme Colors (Exact Hex Values from CardNest Design Tokens)
+$primary:       #5C2D56; // --primary-color
+$secondary:     #7E4676; // --primary-light
+$success:       #1E7E4E; // --success-color
+$info:          #435A74; // --info-color
+$warning:       #AD6800; // --warning-color
+$danger:        #B83232; // --danger-color
+$light:         #FAF9F8; // --background-color
+$dark:          #1E1B1D; // --text-primary
+
+// Body Configuration
+$body-bg:       #FAF9F8; // --background-color
+$body-color:    #1E1B1D; // --text-primary
+
+// Typography
+$font-family-sans-serif: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+$font-family-base:       $font-family-sans-serif;
+$headings-font-family:   $font-family-sans-serif;
+$headings-color:         #1E1B1D;
+$headings-font-weight:   600;
+
+// Borders & Radii (Matches custom .btn 10px and .card-surface 14px)
+$border-color:           #E6E0E6; // --border-color
+$border-radius:          10px;    // --radius-md (matches existing custom .btn)
+$border-radius-sm:       6px;     // --radius-sm
+$border-radius-lg:       14px;    // --radius-lg (matches existing custom .card-surface)
+$border-radius-xl:       20px;    // --radius-xl
+$border-radius-pill:     9999px;  // --radius-full
+
+// Links
+$link-color:             #5C2D56; // --primary-color
+$link-hover-color:       #3F1D3B; // --primary-dark
+$link-decoration:        none;
+$link-hover-decoration:   underline;
+
+// Buttons
+$btn-border-radius:      10px;
+$btn-border-radius-sm:   6px;
+$btn-border-radius-lg:   14px;
+$btn-focus-box-shadow:   0 0 0 3px rgba(92, 45, 86, 0.2);
+
+// Cards
+$card-bg:                #FFFFFF; // --surface-color
+$card-border-color:      #E6E0E6; // --border-color
+$card-border-radius:     14px;    // --radius-lg
+
+// Forms / Inputs
+$input-bg:               #FFFFFF;
+$input-border-color:     #E6E0E6;
+$input-border-radius:    10px;
+$input-color:            #1E1B1D;
+$input-focus-border-color: #5C2D56;
+$input-focus-box-shadow: 0 0 0 3px rgba(92, 45, 86, 0.12);
+
+// Modals
+$modal-content-bg:           #FFFFFF;
+$modal-content-border-color: #E6E0E6;
+$modal-content-border-radius: 14px;
+$modal-backdrop-bg:          #1E0A1C;
+$modal-backdrop-opacity:     0.45;
+$modal-header-border-color:  #F0ECEF;
+$modal-footer-border-color:  #F0ECEF;
+
+// Tables
+$table-color:            #1E1B1D;
+$table-bg:               #FFFFFF;
+$table-border-color:     #E6E0E6;
+$table-hover-bg:         #F9F7F9;

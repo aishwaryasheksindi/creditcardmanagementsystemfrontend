@@ -1,18 +1,20 @@
-﻿<div class="modal-backdrop" *ngIf="isOpen" (click)="onCancel()" role="presentation">
-  <div class="modal-card" (click)="$event.stopPropagation()" role="dialog" [attr.aria-label]="title">
-    <div class="modal-header">
-      <h3 class="modal-title">{{ title }}</h3>
-    </div>
-    <div class="modal-body">
-      <p>{{ message }}</p>
-    </div>
-    <div class="modal-footer">
-      <button type="button" class="btn btn-outline btn-sm" (click)="onCancel()">
-        {{ cancelText }}
-      </button>
-      <button type="button" [class]="isDanger ? 'btn btn-danger btn-sm' : 'btn btn-primary btn-sm'" (click)="onConfirm()">
-        {{ confirmText }}
-      </button>
-    </div>
+﻿<ng-template #modalTpl let-modal>
+  <div class="modal-header d-flex align-items-center justify-content-between">
+    <h5 class="modal-title m-0 fw-semibold">{{ title }}</h5>
+    <button type="button" class="btn-close" aria-label="Close" (click)="onCancel()"></button>
   </div>
-</div>
+  <div class="modal-body py-4">
+    <p class="mb-0 text-secondary">{{ message }}</p>
+  </div>
+  <div class="modal-footer d-flex justify-content-end gap-2 bg-light border-top">
+    <button type="button" class="btn btn-outline btn-sm" (click)="onCancel()">
+      {{ cancelText }}
+    </button>
+    <button
+      type="button"
+      [class]="isDanger ? 'btn btn-danger btn-sm' : 'btn btn-primary btn-sm'"
+      (click)="onConfirm()">
+      {{ confirmText }}
+    </button>
+  </div>
+</ng-template>

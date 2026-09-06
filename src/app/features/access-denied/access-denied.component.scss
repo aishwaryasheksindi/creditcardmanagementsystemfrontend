@@ -1,0 +1,36 @@
+﻿.access-denied-container {
+  min-height: 60vh;
+
+  .access-denied-card {
+    max-width: 520px;
+    width: 100%;
+    background-color: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+
+    .shield-icon-wrapper {
+      width: 80px;
+      height: 80px;
+      border-radius: var(--radius-full);
+      background-color: var(--warning-bg);
+      color: var(--warning-color);
+      border: 1px solid var(--warning-border);
+    }
+
+    .access-title {
+      font-size: var(--font-size-section-title);
+      color: var(--text-primary);
+      font-weight: 700;
+    }
+
+    .access-subtitle {
+      font-size: var(--font-size-body);
+      max-width: 380px;
+      margin: 0;
+    }
+
+    .access-help {
+      max-width: 380px;
+    }
+  }
+}
