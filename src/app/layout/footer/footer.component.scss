@@ -1,0 +1,29 @@
+﻿.app-footer {
+  height: var(--footer-height);
+  background-color: var(--surface-color);
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--spacing-lg);
+  font-size: var(--font-size-small);
+  color: var(--text-muted);
+  user-select: none;
+
+  .footer-content {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    flex-wrap: wrap;
+    justify-content: center;
+
+    .footer-copyright {
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .footer-tagline {
+      color: var(--text-muted);
+    }
+  }
+}

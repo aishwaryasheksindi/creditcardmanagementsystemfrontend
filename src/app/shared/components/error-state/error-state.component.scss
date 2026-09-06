@@ -1,0 +1,36 @@
+﻿.error-state-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--spacing-2xl) var(--spacing-lg);
+  background-color: var(--danger-bg);
+  border: 1px solid var(--danger-border);
+  border-radius: var(--radius-lg);
+
+  .error-icon-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: var(--radius-full);
+    background-color: var(--surface-color);
+    color: var(--danger-color);
+    margin-bottom: var(--spacing-md);
+  }
+
+  .error-title {
+    font-size: var(--font-size-card-title);
+    margin-bottom: var(--spacing-xs);
+    color: var(--text-primary);
+  }
+
+  .error-message {
+    max-width: 440px;
+    color: var(--text-secondary);
+    font-size: var(--font-size-body);
+    margin-bottom: var(--spacing-lg);
+  }
+}

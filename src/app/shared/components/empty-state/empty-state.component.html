@@ -1,0 +1,13 @@
+﻿<div class="empty-state-card" role="region" aria-label="Empty state">
+  <div class="empty-icon-wrapper">
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+      <line x1="2" y1="10" x2="22" y2="10"></line>
+    </svg>
+  </div>
+  <h3 class="empty-title">{{ title }}</h3>
+  <p class="empty-message">{{ message }}</p>
+  <button *ngIf="actionLabel" type="button" class="btn btn-secondary" (click)="onAction()">
+    {{ actionLabel }}
+  </button>
+</div>

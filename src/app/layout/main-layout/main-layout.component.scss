@@ -1,0 +1,73 @@
+﻿.layout-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: var(--background-color);
+
+  .layout-body {
+    display: flex;
+    flex: 1;
+    position: relative;
+
+    .sidebar-desktop {
+      display: block;
+
+      @media (max-width: 992px) {
+        display: none;
+      }
+    }
+
+    .sidebar-mobile-backdrop {
+      display: none;
+
+      @media (max-width: 992px) {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background-color: rgba(30, 10, 28, 0.45);
+        backdrop-filter: blur(2px);
+        z-index: 150;
+
+        .sidebar-mobile-drawer {
+          width: var(--sidebar-width);
+          height: 100%;
+          background-color: var(--surface-color);
+          box-shadow: var(--shadow-lg);
+          animation: slideDrawer 0.2s ease-out;
+
+          app-sidebar {
+            height: 100%;
+          }
+        }
+      }
+    }
+
+    .content-wrapper {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-width: 0;
+
+      .main-content {
+        flex: 1;
+        padding: var(--spacing-xl);
+        max-width: 1400px;
+        width: 100%;
+        margin: 0 auto;
+
+        @media (max-width: 768px) {
+          padding: var(--spacing-md);
+        }
+      }
+    }
+  }
+}
+
+@keyframes slideDrawer {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}

@@ -1,0 +1,17 @@
+﻿<div class="card-container" [class.border-accent]="borderAccent">
+  <div class="card-container-header" *ngIf="title">
+    <div class="header-titles">
+      <h3 class="card-title">{{ title }}</h3>
+      <p class="card-subtitle" *ngIf="subtitle">{{ subtitle }}</p>
+    </div>
+    <div class="card-actions">
+      <ng-content select="[card-actions]"></ng-content>
+    </div>
+  </div>
+  <div class="card-container-body">
+    <ng-content></ng-content>
+  </div>
+  <div class="card-container-footer">
+    <ng-content select="[card-footer]"></ng-content>
+  </div>
+</div>

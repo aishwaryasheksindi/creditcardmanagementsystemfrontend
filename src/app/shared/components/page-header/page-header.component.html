@@ -1,0 +1,12 @@
+﻿<header class="page-header">
+  <div class="page-header-info">
+    <div class="page-title-row">
+      <h1 class="page-title">{{ title }}</h1>
+      <span *ngIf="badgeText" class="badge badge-primary">{{ badgeText }}</span>
+    </div>
+    <p *ngIf="subtitle" class="page-subtitle">{{ subtitle }}</p>
+  </div>
+  <div class="page-header-actions">
+    <ng-content select="[header-actions]"></ng-content>
+  </div>
+</header>

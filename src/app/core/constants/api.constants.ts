@@ -1,0 +1,3 @@
+﻿export const API_CONSTANTS = {
+  DEFAULT_TIMEOUT_MS: 30000
+};

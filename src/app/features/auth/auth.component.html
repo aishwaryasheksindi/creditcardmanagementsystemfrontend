@@ -1,0 +1,37 @@
+﻿<div class="auth-page-container">
+  <div class="auth-card">
+    <div class="auth-brand">
+      <div class="brand-badge">
+        <svg width="32" height="32" viewBox="0 0 28 28" fill="none">
+          <rect width="28" height="28" rx="8" fill="#5C2D56"/>
+          <path d="M7 11C7 9.89543 7.89543 9 9 9H19C20.1046 9 21 9.89543 21 11V17C21 18.1046 20.1046 19 19 19H9C7.89543 19 7 18.1046 7 17V11Z" stroke="#FDF8F0" stroke-width="1.8"/>
+          <line x1="7" y1="12.5" x2="21" y2="12.5" stroke="#FDF8F0" stroke-width="1.5"/>
+          <circle cx="11" cy="16" r="1.2" fill="#FDF8F0"/>
+        </svg>
+      </div>
+      <h1 class="brand-title">CardNest</h1>
+      <p class="brand-tagline">AI-Powered Credit Card Management &amp; Fraud Detection System</p>
+    </div>
+
+    <div class="auth-form-placeholder">
+      <div class="form-group">
+        <label class="form-label" for="username">Username or Corporate ID</label>
+        <input id="username" type="text" class="form-control" placeholder="e.g. alex.morgan" disabled />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="password">Password</label>
+        <input id="password" type="password" class="form-control" placeholder="••••••••••••" disabled />
+        <span class="form-hint">Authentication backend integration scheduled for Auth Module.</span>
+      </div>
+
+      <button type="button" class="btn btn-primary enter-btn" (click)="onEnterApp()">
+        Enter Platform (Preview Foundation)
+      </button>
+    </div>
+
+    <div class="auth-footer">
+      <span>&copy; 2026 CardNest &bull; Secure Enterprise Banking Platform</span>
+    </div>
+  </div>
+</div>

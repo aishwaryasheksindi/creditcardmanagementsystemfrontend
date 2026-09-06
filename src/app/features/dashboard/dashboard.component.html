@@ -1,0 +1,57 @@
+﻿<div class="dashboard-feature">
+  <app-page-header
+    title="Executive Dashboard"
+    subtitle="Overview of credit operations, fraud telemetry, and portfolio status."
+    badgeText="Live System">
+    <div header-actions>
+      <button type="button" class="btn btn-secondary btn-sm">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+        </svg>
+        Refresh Metrics
+      </button>
+    </div>
+  </app-page-header>
+
+  <div class="metrics-grid">
+    <app-card-container [borderAccent]="true">
+      <div class="metric-card">
+        <span class="metric-label">Active Portfolio</span>
+        <div class="metric-value-row">
+          <span class="metric-value">--</span>
+          <span class="badge badge-primary">Awaiting Backend</span>
+        </div>
+        <p class="metric-desc">Connected to Spring Boot API via Core ApiService</p>
+      </div>
+    </app-card-container>
+
+    <app-card-container [borderAccent]="true">
+      <div class="metric-card">
+        <span class="metric-label">Fraud Telemetry</span>
+        <div class="metric-value-row">
+          <span class="metric-value">Active</span>
+          <span class="badge badge-success">Engine Online</span>
+        </div>
+        <p class="metric-desc">AI Risk Monitoring module configured</p>
+      </div>
+    </app-card-container>
+
+    <app-card-container [borderAccent]="true">
+      <div class="metric-card">
+        <span class="metric-label">Settlement Engine</span>
+        <div class="metric-value-row">
+          <span class="metric-value">Synchronized</span>
+          <span class="badge badge-primary">Operational</span>
+        </div>
+        <p class="metric-desc">Transaction processing pipeline ready</p>
+      </div>
+    </app-card-container>
+  </div>
+
+  <div class="content-section">
+    <app-card-container title="Quick Navigation & System Modules" subtitle="Enterprise Credit Card Management Features">
+      <p>CardNest is structured with 14 isolated, lazily-loaded feature modules following clean Angular enterprise architecture.</p>
+    </app-card-container>
+  </div>
+</div>

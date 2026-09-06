@@ -1,0 +1,106 @@
+﻿.notification-panel-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(30, 10, 28, 0.35);
+  backdrop-filter: blur(1px);
+  z-index: 120;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.notification-panel {
+  width: 360px;
+  max-width: 90vw;
+  height: 100vh;
+  background-color: var(--surface-color);
+  box-shadow: var(--shadow-lg);
+  border-left: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  animation: slideLeft 0.2s ease-out;
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-bottom: 1px solid var(--border-color);
+
+    .panel-title-area {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+
+      h3 {
+        margin: 0;
+        font-size: 16px;
+      }
+    }
+  }
+
+  .panel-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--spacing-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+
+    .notification-card {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--spacing-sm);
+      padding: var(--spacing-md);
+      border-radius: var(--radius-md);
+      background-color: var(--surface-alt);
+      border: 1px solid var(--border-light);
+
+      .item-icon {
+        padding: 6px;
+        border-radius: var(--radius-full);
+        flex-shrink: 0;
+
+        &.info {
+          background-color: var(--primary-surface);
+          color: var(--primary-color);
+        }
+
+        &.warning {
+          background-color: var(--warning-bg);
+          color: var(--warning-color);
+        }
+      }
+
+      .item-content {
+        display: flex;
+        flex-direction: column;
+
+        .item-title {
+          font-weight: 600;
+          font-size: 13px;
+          color: var(--text-primary);
+        }
+
+        .item-message {
+          font-size: 12px;
+          color: var(--text-secondary);
+          margin: 2px 0 6px;
+        }
+
+        .item-time {
+          font-size: 11px;
+          color: var(--text-muted);
+        }
+      }
+    }
+  }
+}
+
+@keyframes slideLeft {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}

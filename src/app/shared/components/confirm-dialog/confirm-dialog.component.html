@@ -1,0 +1,18 @@
+﻿<div class="modal-backdrop" *ngIf="isOpen" (click)="onCancel()" role="presentation">
+  <div class="modal-card" (click)="$event.stopPropagation()" role="dialog" [attr.aria-label]="title">
+    <div class="modal-header">
+      <h3 class="modal-title">{{ title }}</h3>
+    </div>
+    <div class="modal-body">
+      <p>{{ message }}</p>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-outline btn-sm" (click)="onCancel()">
+        {{ cancelText }}
+      </button>
+      <button type="button" [class]="isDanger ? 'btn btn-danger btn-sm' : 'btn btn-primary btn-sm'" (click)="onConfirm()">
+        {{ confirmText }}
+      </button>
+    </div>
+  </div>
+</div>
