@@ -45,14 +45,16 @@ export class CardDetailsComponent implements OnInit {
 
   ngOnInit(): void {
     this.isCustomer = this.authService.hasRole('CUSTOMER');
-    this.cardId = this.route.snapshot.paramMap.get('cardId');
-
-    if (this.cardId) {
-      this.loadCardDetails(this.cardId);
-      this.loadRecentActivity(this.cardId);
-    } else {
-      this.cardErrorMessage = 'No Card ID provided.';
-    }
+    this.route.paramMap.subscribe((params) => {
+      const id = params.get('cardId');
+      if (id) {
+        this.cardId = id;
+        this.loadCardDetails(id);
+        this.loadRecentActivity(id);
+      } else {
+        this.cardErrorMessage = 'No Card ID provided.';
+      }
+    });
   }
 
   loadCardDetails(cardId: string): void {

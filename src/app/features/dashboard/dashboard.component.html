@@ -6,7 +6,7 @@
       subtitle="Your CardNest customer portal and personal card management center."
       badgeText="Customer Portal">
       <div header-actions>
-        <button type="button" class="btn btn-secondary btn-sm d-inline-flex align-items-center gap-2" (click)="loadCustomerDashboard()" [disabled]="isLoading">
+        <button type="button" class="btn btn-secondary btn-sm d-inline-flex align-items-center gap-2" (click)="loadCustomerDashboard(true)" [disabled]="isLoading">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="23 4 23 10 17 10"></polyline>
             <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
@@ -22,15 +22,15 @@
     </div>
 
     <!-- Error State -->
-    <div class="my-4" *ngIf="errorMessage && !isLoading">
+    <div class="my-4" *ngIf="errorMessage && !customer">
       <app-error-state
         title="Unable to Load Dashboard"
         [message]="errorMessage"
-        (retry)="loadCustomerDashboard()">
+        (retry)="loadCustomerDashboard(true)">
       </app-error-state>
     </div>
 
-    <div *ngIf="!isLoading || customer">
+    <div *ngIf="customer">
       <!-- 6 Summary Cards (Only Active Cards is wired to real API; rest are clearly-labeled 'Coming soon' placeholders) -->
       <div class="row g-3 g-md-4 mb-4">
         <!-- Active Cards (Wired to real backend card count) -->
@@ -41,7 +41,7 @@
               <div class="metric-value-row d-flex align-items-center justify-content-between my-2">
                 <span class="metric-value fs-4 fw-bold">{{ cards.length }}</span>
                 <span class="badge bg-success-subtle text-success border border-success-subtle">
-                  {{ cards.length === 1 ? '1 Card Active' : cards.length + ' Cards Active' }}
+                  {{ cards.length === 1 ? '1 Card' : cards.length + ' Cards' }}
                 </span>
               </div>
               <p class="metric-desc text-secondary mb-0">Total cards linked to your account</p>
@@ -126,8 +126,18 @@
         <div class="col-12 col-lg-8">
           <app-card-container
             title="Recent Transactions"
-            [subtitle]="primaryCard ? 'Latest transactions on card ' + primaryCard.cardReference : 'Recent card transaction preview'">
+            [subtitle]="cards.length === 1 ? 'Latest activity for card ' + cards[0].cardReference : (selectedCard ? 'Activity for card ' + selectedCard.cardReference : 'Recent card transaction preview')">
             
+            <!-- Card Selector for multiple cards -->
+            <div *ngIf="cards.length > 1" class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
+              <label for="cardSelect" class="form-label mb-0 small text-muted text-nowrap">View card:</label>
+              <select id="cardSelect" class="form-select form-select-sm w-auto" [ngModel]="selectedCard?.cardId" (ngModelChange)="onSelectCard($event)">
+                <option *ngFor="let c of cards" [value]="c.cardId">
+                  {{ c.cardReference }} ({{ c.cardStatus }})
+                </option>
+              </select>
+            </div>
+
             <!-- Empty state if 0 cards -->
             <div *ngIf="cards.length === 0" class="py-3">
               <app-empty-state
@@ -136,8 +146,13 @@
               </app-empty-state>
             </div>
 
+            <!-- Loading transactions state -->
+            <div *ngIf="isLoadingTransactions" class="py-3">
+              <app-loading-spinner message="Loading transactions..."></app-loading-spinner>
+            </div>
+
             <!-- Empty state if card has 0 transactions -->
-            <div *ngIf="cards.length > 0 && recentTransactions.length === 0" class="py-3">
+            <div *ngIf="!isLoadingTransactions && cards.length > 0 && recentTransactions.length === 0" class="py-3">
               <app-empty-state
                 title="No Transactions"
                 message="No recent transactions recorded for this card.">
@@ -145,7 +160,7 @@
             </div>
 
             <!-- Transactions Preview Table -->
-            <div *ngIf="recentTransactions.length > 0" class="table-responsive">
+            <div *ngIf="!isLoadingTransactions && recentTransactions.length > 0" class="table-responsive">
               <table class="table align-middle table-hover mb-0">
                 <thead class="table-light">
                   <tr>
@@ -178,42 +193,87 @@
               </table>
             </div>
 
-            <div *ngIf="primaryCard" class="mt-3 pt-3 border-top text-end">
-              <a [routerLink]="['/app/cards', primaryCard.cardId]" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1">
+            <div *ngIf="selectedCard" class="mt-3 pt-3 border-top text-end">
+              <a [routerLink]="['/app/cards', selectedCard.cardId]" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1">
                 View Card Activity &rarr;
               </a>
             </div>
           </app-card-container>
         </div>
 
-        <!-- Quick Actions & Cardholder Services -->
+        <!-- Cards Overview & Quick Actions -->
         <div class="col-12 col-lg-4">
           <div class="d-flex flex-column gap-4">
-            <!-- Primary Card Snapshot Card -->
-            <app-card-container title="My Primary Card" *ngIf="primaryCard" [borderAccent]="true">
-              <div class="card-snapshot-widget p-3 rounded mb-3">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                  <span class="fw-bold brand-badge">CardNest</span>
-                  <span class="badge" [ngClass]="getCardStatusBadge(primaryCard.cardStatus)">{{ primaryCard.cardStatus }}</span>
-                </div>
-                <div class="card-ref-number font-monospace fs-5 fw-bold mb-3">{{ primaryCard.cardReference }}</div>
-                <div class="row g-2 small text-secondary">
-                  <div class="col-6">
-                    <span class="d-block text-muted">Available</span>
-                    <strong class="text-dark">{{ primaryCard.availableLimit | currency:'INR':'symbol':'1.0-0' }}</strong>
-                  </div>
-                  <div class="col-6 text-end">
-                    <span class="d-block text-muted">Limit</span>
-                    <strong class="text-dark">{{ primaryCard.creditLimit | currency:'INR':'symbol':'1.0-0' }}</strong>
-                  </div>
-                </div>
+            <!-- Cards Overview Card (Neutral "My Cards" title, handles 1 or multiple cards) -->
+            <app-card-container title="My Cards" [borderAccent]="true">
+              <!-- Empty state if 0 cards -->
+              <div *ngIf="cards.length === 0" class="py-2 text-center text-muted small">
+                No cards currently linked to your account.
               </div>
-              <a [routerLink]="['/app/cards', primaryCard.cardId]" class="btn btn-primary w-100 btn-sm">
-                View Card Details & Controls
-              </a>
+
+              <!-- Single Card display -->
+              <div *ngIf="cards.length === 1">
+                <div class="card-snapshot-widget p-3 rounded mb-3">
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div class="d-flex align-items-center gap-2">
+                      <span class="fw-bold brand-badge">CardNest</span>
+                      <span class="badge bg-light text-dark border small" *ngIf="cards[0].cardTypeId">{{ cards[0].cardTypeId }}</span>
+                    </div>
+                    <span class="badge" [ngClass]="getCardStatusBadge(cards[0].cardStatus)">{{ cards[0].cardStatus }}</span>
+                  </div>
+                  <div class="card-ref-number font-monospace fs-5 fw-bold mb-3">{{ cards[0].cardReference }}</div>
+                  <div class="row g-2 small text-secondary">
+                    <div class="col-6">
+                      <span class="d-block text-muted">Available</span>
+                      <strong class="text-dark">{{ cards[0].availableLimit | currency:'INR':'symbol':'1.0-0' }}</strong>
+                    </div>
+                    <div class="col-6 text-end">
+                      <span class="d-block text-muted">Limit</span>
+                      <strong class="text-dark">{{ cards[0].creditLimit | currency:'INR':'symbol':'1.0-0' }}</strong>
+                    </div>
+                  </div>
+                </div>
+                <a [routerLink]="['/app/cards', cards[0].cardId]" class="btn btn-primary w-100 btn-sm">
+                  View Card Details & Controls
+                </a>
+              </div>
+
+              <!-- Multiple Cards display (compact cards list) -->
+              <div *ngIf="cards.length > 1">
+                <div class="d-flex flex-column gap-3 mb-3">
+                  <div *ngFor="let card of cards" class="card-snapshot-widget p-3 rounded" (click)="viewCardDetails(card.cardId)" style="cursor: pointer;">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <div class="d-flex align-items-center gap-2">
+                        <span class="fw-bold brand-badge">CardNest</span>
+                        <span class="badge bg-light text-dark border small" *ngIf="card.cardTypeId">{{ card.cardTypeId }}</span>
+                      </div>
+                      <span class="badge" [ngClass]="getCardStatusBadge(card.cardStatus)">{{ card.cardStatus }}</span>
+                    </div>
+                    <div class="card-ref-number font-monospace fs-6 fw-bold mb-2">{{ card.cardReference }}</div>
+                    <div class="row g-2 small text-secondary">
+                      <div class="col-6">
+                        <span class="d-block text-muted">Available</span>
+                        <strong class="text-dark">{{ card.availableLimit | currency:'INR':'symbol':'1.0-0' }}</strong>
+                      </div>
+                      <div class="col-6 text-end">
+                        <span class="d-block text-muted">Limit</span>
+                        <strong class="text-dark">{{ card.creditLimit | currency:'INR':'symbol':'1.0-0' }}</strong>
+                      </div>
+                    </div>
+                    <div class="mt-2 text-end">
+                      <a [routerLink]="['/app/cards', card.cardId]" class="small text-primary text-decoration-none fw-medium" (click)="$event.stopPropagation()">
+                        View Details &rarr;
+                      </a>
+                    </div>
+                  </div>
+                </div>
+                <button type="button" class="btn btn-outline-primary w-100 btn-sm" (click)="navigateToCards()">
+                  View All Cards in My Cards
+                </button>
+              </div>
             </app-card-container>
 
-            <!-- Quick Navigation Actions -->
+            <!-- Quick Actions: only My Cards (Profile Settings removed as redundant with top-right dropdown) -->
             <app-card-container title="Quick Actions">
               <div class="d-flex flex-column gap-2">
                 <button type="button" class="btn btn-outline-secondary w-100 text-start d-flex align-items-center justify-content-between py-2 px-3" (click)="navigateToCards()">
@@ -224,18 +284,7 @@
                     </svg>
                     <strong>My Cards</strong>
                   </span>
-                  <span class="text-muted small">&rarr;</span>
-                </button>
-
-                <button type="button" class="btn btn-outline-secondary w-100 text-start d-flex align-items-center justify-content-between py-2 px-3" (click)="navigateToProfile()">
-                  <span class="d-flex align-items-center gap-2">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                      <circle cx="12" cy="7" r="4"></circle>
-                    </svg>
-                    <strong>Profile Settings</strong>
-                  </span>
-                  <span class="text-muted small">&rarr;</span>
+                  <span class="text-muted small">View all &rarr;</span>
                 </button>
               </div>
             </app-card-container>

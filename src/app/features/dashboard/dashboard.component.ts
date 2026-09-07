@@ -18,11 +18,12 @@ export class DashboardComponent implements OnInit {
   customer: Customer | null = null;
   cards: Card[] = [];
   recentTransactions: Transaction[] = [];
-  primaryCard: Card | null = null;
+  selectedCard: Card | null = null;
 
   isLoading: boolean = false;
   isCustomer: boolean = false;
   errorMessage: string | null = null;
+  isLoadingTransactions: boolean = false;
 
   constructor(
     public authService: AuthService,
@@ -40,11 +41,11 @@ export class DashboardComponent implements OnInit {
     }
   }
 
-  loadCustomerDashboard(): void {
+  loadCustomerDashboard(forceRefresh: boolean = false): void {
     this.isLoading = true;
     this.errorMessage = null;
 
-    this.customerService.getMyProfile().subscribe({
+    this.customerService.getMyProfile(forceRefresh).subscribe({
       next: (customer) => {
         this.customer = customer;
         this.loadCustomerCards(customer.customerId);
@@ -67,23 +68,44 @@ export class DashboardComponent implements OnInit {
         this.isLoading = false;
 
         if (this.cards.length > 0) {
-          this.primaryCard = this.cards[0];
-          this.loadRecentTransactions(this.primaryCard.cardId);
+          // If a card was previously selected and still exists, keep it; otherwise default preview to first available card
+          if (!this.selectedCard || !this.cards.some(c => c.cardId === this.selectedCard?.cardId)) {
+            this.selectedCard = this.cards[0];
+          }
+          if (this.selectedCard) {
+            this.loadRecentTransactions(this.selectedCard.cardId);
+          }
+        } else {
+          this.selectedCard = null;
+          this.recentTransactions = [];
         }
       },
       error: () => {
+        this.cards = [];
         this.isLoading = false;
+        this.errorMessage = 'Failed to load credit cards. Please try again.';
       }
     });
   }
 
+  onSelectCard(cardId: string): void {
+    const card = this.cards.find(c => c.cardId === cardId);
+    if (card) {
+      this.selectedCard = card;
+      this.loadRecentTransactions(card.cardId);
+    }
+  }
+
   private loadRecentTransactions(cardId: string): void {
+    this.isLoadingTransactions = true;
     this.transactionService.getTransactionsByCard(cardId).subscribe({
       next: (transactions) => {
         this.recentTransactions = (transactions || []).slice(0, 5);
+        this.isLoadingTransactions = false;
       },
       error: () => {
         this.recentTransactions = [];
+        this.isLoadingTransactions = false;
       }
     });
   }
@@ -133,7 +155,7 @@ export class DashboardComponent implements OnInit {
     this.router.navigate(['/app/cards']);
   }
 
-  navigateToProfile(): void {
-    this.router.navigate(['/app/profile']);
+  viewCardDetails(cardId: string): void {
+    this.router.navigate(['/app/cards', cardId]);
   }
 }

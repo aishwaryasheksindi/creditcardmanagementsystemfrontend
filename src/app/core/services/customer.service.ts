@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { BehaviorSubject, Observable, of, tap, shareReplay } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { Customer } from '../models/customer.model';
 
@@ -18,11 +18,15 @@ export class CustomerService {
     return this.currentCustomerSubject.value;
   }
 
-  public getMyProfile(): Observable<Customer> {
+  public getMyProfile(forceRefresh: boolean = false): Observable<Customer> {
+    if (!forceRefresh && this.currentCustomerSubject.value) {
+      return of(this.currentCustomerSubject.value);
+    }
     return this.http.get<Customer>(`${this.baseUrl}/customers/me`).pipe(
       tap((customer) => {
         this.currentCustomerSubject.next(customer);
-      })
+      }),
+      shareReplay(1)
     );
   }
 

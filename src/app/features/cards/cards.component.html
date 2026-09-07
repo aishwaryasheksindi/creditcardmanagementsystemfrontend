@@ -4,7 +4,7 @@
     subtitle="View and manage your credit cards, available limits, and status controls."
     badgeText="Credit Cards">
     <div header-actions>
-      <button type="button" class="btn btn-secondary btn-sm d-inline-flex align-items-center gap-2" (click)="loadCards()" [disabled]="isLoading">
+      <button type="button" class="btn btn-secondary btn-sm d-inline-flex align-items-center gap-2" (click)="loadCards(true)" [disabled]="isLoading">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polyline points="23 4 23 10 17 10"></polyline>
           <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
@@ -24,7 +24,7 @@
     <app-error-state
       title="Unable to Load Cards"
       [message]="errorMessage"
-      (retry)="loadCards()">
+      (retry)="loadCards(true)">
     </app-error-state>
   </div>
 

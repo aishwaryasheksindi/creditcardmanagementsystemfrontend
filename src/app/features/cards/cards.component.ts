@@ -30,34 +30,29 @@ export class CardsComponent implements OnInit {
     this.loadCards();
   }
 
-  loadCards(): void {
+  loadCards(forceRefresh: boolean = false): void {
     this.isLoading = true;
     this.errorMessage = null;
 
-    if (this.isCustomer) {
-      const cachedCustomer = this.customerService.currentCustomer;
-      if (cachedCustomer?.customerId) {
-        this.customerId = cachedCustomer.customerId;
-        this.fetchCardsForCustomer(this.customerId);
-      } else {
-        this.customerService.getMyProfile().subscribe({
-          next: (customer) => {
-            this.customerId = customer.customerId;
-            this.fetchCardsForCustomer(customer.customerId);
-          },
-          error: (err) => {
-            this.isLoading = false;
-            if (err.status === 404) {
-              this.errorMessage = 'No customer profile found for your account.';
-            } else {
-              this.errorMessage = 'Failed to load customer profile. Please try again.';
-            }
-          }
-        });
-      }
-    } else {
+    if (!this.isCustomer) {
       this.isLoading = false;
+      return;
     }
+
+    this.customerService.getMyProfile(forceRefresh).subscribe({
+      next: (customer) => {
+        this.customerId = customer.customerId;
+        this.fetchCardsForCustomer(customer.customerId);
+      },
+      error: (err) => {
+        this.isLoading = false;
+        if (err.status === 404) {
+          this.errorMessage = 'No customer profile found for your account.';
+        } else {
+          this.errorMessage = 'Failed to load customer profile. Please try again.';
+        }
+      }
+    });
   }
 
   private fetchCardsForCustomer(customerId: string): void {
@@ -67,6 +62,7 @@ export class CardsComponent implements OnInit {
         this.isLoading = false;
       },
       error: () => {
+        this.cards = [];
         this.isLoading = false;
         this.errorMessage = 'Failed to load credit cards. Please try again.';
       }
