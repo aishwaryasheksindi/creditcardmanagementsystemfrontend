@@ -39,12 +39,12 @@
             <div class="metric-card d-flex flex-column gap-1">
               <span class="metric-label text-uppercase fw-semibold">Active Cards</span>
               <div class="metric-value-row d-flex align-items-center justify-content-between my-2">
-                <span class="metric-value fs-4 fw-bold">{{ cards.length }}</span>
+                <span class="metric-value fs-4 fw-bold">{{ activeCardsCount }}</span>
                 <span class="badge bg-success-subtle text-success border border-success-subtle">
-                  {{ cards.length === 1 ? '1 Card' : cards.length + ' Cards' }}
+                  {{ activeCardsCount === 1 ? '1 Active' : activeCardsCount + ' Active' }}
                 </span>
               </div>
-              <p class="metric-desc text-secondary mb-0">Total cards linked to your account</p>
+              <p class="metric-desc text-secondary mb-0">{{ cards.length }} total card(s) linked to your account</p>
             </div>
           </app-card-container>
         </div>

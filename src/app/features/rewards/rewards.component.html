@@ -1,16 +1,177 @@
-﻿<div class="rewards-feature">
+<div class="rewards-feature">
+  <!-- Page Header -->
   <app-page-header
-    title="Loyalty & Rewards"
-    subtitle="Cashback accrual, tier status, points catalog, and redemption."
-    badgeText="Loyalty">
+    title="Loyalty & Rewards Program"
+    subtitle="Track earned reward points, view redemption history, and explore AI-tailored offers."
+    badgeText="Loyalty Program">
   </app-page-header>
 
-  <app-card-container [borderAccent]="true" title="Loyalty & Rewards Overview">
-    <app-empty-state
-      title="Loyalty & Rewards Module Ready"
-      message="This foundation module is established and routing is operational. Integration with Spring Boot backend services will occur in subsequent phases."
-      actionLabel="View Dashboard"
-      (actionClicked)="false">
-    </app-empty-state>
-  </app-card-container>
+  <!-- Error Alert -->
+  <div *ngIf="errorMessage" class="alert alert-danger alert-dismissible fade show" role="alert">
+    <strong>Error:</strong> {{ errorMessage }}
+    <button type="button" class="btn-close" (click)="errorMessage = null" aria-label="Close"></button>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="py-4">
+    <app-loading-spinner message="Loading rewards and loyalty points..."></app-loading-spinner>
+  </div>
+
+  <!-- Content when Loaded -->
+  <div *ngIf="!isLoading">
+    <!-- Rewards Metrics Cards -->
+    <div class="row g-3 mb-4">
+      <!-- Balance Points Highlight Card -->
+      <div class="col-12 col-md-4">
+        <div class="card border-0 shadow-sm p-4 h-100 bg-primary text-white rounded-3">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <span class="text-white-50 small fw-semibold text-uppercase tracking-wider">Available Points</span>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+          </div>
+          <h2 class="display-6 fw-bold font-monospace mb-1">
+            {{ (reward?.balancePoints || 0) | number }}
+          </h2>
+          <span class="text-white-50 small">Redeemable for cashback and partner vouchers</span>
+        </div>
+      </div>
+
+      <!-- Lifetime Earned -->
+      <div class="col-6 col-md-2">
+        <div class="card border shadow-sm p-3 h-100 bg-white">
+          <span class="text-muted small fw-medium d-block mb-1">Total Earned</span>
+          <h4 class="fw-bold text-success font-monospace mb-1">
+            {{ (reward?.earnedPoints || 0) | number }}
+          </h4>
+          <small class="text-muted">Lifetime points</small>
+        </div>
+      </div>
+
+      <!-- Redeemed Points -->
+      <div class="col-6 col-md-2">
+        <div class="card border shadow-sm p-3 h-100 bg-white">
+          <span class="text-muted small fw-medium d-block mb-1">Redeemed</span>
+          <h4 class="fw-bold text-warning font-monospace mb-1">
+            {{ (reward?.redeemedPoints || 0) | number }}
+          </h4>
+          <small class="text-muted">Claimed rewards</small>
+        </div>
+      </div>
+
+      <!-- Bonus Points -->
+      <div class="col-6 col-md-2">
+        <div class="card border shadow-sm p-3 h-100 bg-white">
+          <span class="text-muted small fw-medium d-block mb-1">Bonus Points</span>
+          <h4 class="fw-bold text-primary font-monospace mb-1">
+            {{ (reward?.bonusPoints || 0) | number }}
+          </h4>
+          <small class="text-muted">Promotional credits</small>
+        </div>
+      </div>
+
+      <!-- Expired Points -->
+      <div class="col-6 col-md-2">
+        <div class="card border shadow-sm p-3 h-100 bg-white">
+          <span class="text-muted small fw-medium d-block mb-1">Expired</span>
+          <h4 class="fw-bold text-secondary font-monospace mb-1">
+            {{ (reward?.expiredPoints || 0) | number }}
+          </h4>
+          <small class="text-muted">Lapsed balances</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Personalized Recommendations Section (PDF §31) -->
+    <app-card-container
+      *ngIf="recommendations.length > 0"
+      title="Personalized Offers & AI Recommendations"
+      subtitle="Intelligent benefit matching based on your transactional spending profile">
+      <div class="row g-3">
+        <div class="col-12 col-md-6 col-lg-4" *ngFor="let rec of recommendations">
+          <div class="card h-100 border p-3 bg-light-subtle position-relative">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
+                AI Match
+              </span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-primary">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.26L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
+              </svg>
+            </div>
+            <h6 class="fw-bold text-dark mb-1">{{ rec.offerName }}</h6>
+            <p class="text-muted small mb-0">{{ rec.reason }}</p>
+          </div>
+        </div>
+      </div>
+    </app-card-container>
+
+    <!-- Points Ledger / Activity Container -->
+    <app-card-container [borderAccent]="true" title="Reward Points Ledger" subtitle="Historical record of points earned on purchases, bonuses, and redemptions">
+      
+      <!-- Filter Toolbar -->
+      <div class="row g-3 mb-3 align-items-center">
+        <div class="col-12 col-md-4">
+          <label class="form-label small fw-semibold text-muted mb-1" for="rewardTypeSelect">Filter by Activity Type</label>
+          <select
+            id="rewardTypeSelect"
+            class="form-select form-select-sm"
+            [(ngModel)]="selectedTypeFilter"
+            (ngModelChange)="onFilterChange()">
+            <option value="ALL">All Point Activities</option>
+            <option value="EARNED">Earned Points</option>
+            <option value="REDEEMED">Redeemed Points</option>
+            <option value="BONUS">Bonus Points</option>
+            <option value="EXPIRED">Expired Points</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div *ngIf="filteredTransactions.length === 0" class="py-3">
+        <app-empty-state
+          title="No Reward Activity Recorded"
+          message="Reward points will accumulate automatically when qualifying purchases are made with your credit card.">
+        </app-empty-state>
+      </div>
+
+      <!-- Transactions Table -->
+      <div *ngIf="filteredTransactions.length > 0" class="table-responsive">
+        <table class="table align-middle table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th scope="col">Date & Time</th>
+              <th scope="col">Transaction ID</th>
+              <th scope="col">Activity Type</th>
+              <th scope="col">Description</th>
+              <th scope="col" class="text-end">Points</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let txn of filteredTransactions">
+              <td class="text-nowrap">
+                <div class="fw-medium">{{ txn.transactionDate | date:'mediumDate' }}</div>
+                <small class="text-muted">{{ txn.transactionDate | date:'shortTime' }}</small>
+              </td>
+              <td class="font-monospace small text-secondary">
+                {{ txn.rewardTransactionId }}
+              </td>
+              <td>
+                <span class="badge" [ngClass]="getTransactionTypeBadge(txn.transactionType)">
+                  {{ txn.transactionType }}
+                </span>
+              </td>
+              <td>
+                <span class="text-dark">{{ txn.description }}</span>
+              </td>
+              <td class="text-end font-monospace fw-bold fs-6"
+                  [class.text-success]="txn.transactionType === 'EARNED' || txn.transactionType === 'BONUS'"
+                  [class.text-danger]="txn.transactionType === 'REDEEMED' || txn.transactionType === 'EXPIRED'">
+                {{ (txn.transactionType === 'EARNED' || txn.transactionType === 'BONUS') ? '+' : '-' }}{{ txn.points | number }} pts
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </app-card-container>
+  </div>
 </div>

@@ -14,7 +14,44 @@
     [title]="card ? 'Card Details: ' + card.cardReference : 'Card Details'"
     subtitle="Comprehensive card information, status controls, and recent activity."
     badgeText="Card Management">
-    <div header-actions *ngIf="card && isCustomer">
+    <div header-actions *ngIf="card && isCustomer" class="d-flex align-items-center gap-2 flex-wrap">
+      <button
+        *ngIf="card.cardStatus === 'ACTIVE'"
+        type="button"
+        class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1"
+        (click)="openVerifyPinModal()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          <polyline points="9 12 11 14 15 10"></polyline>
+        </svg>
+        Verify PIN
+      </button>
+
+      <button
+        *ngIf="card.cardStatus === 'ACTIVE'"
+        type="button"
+        class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1"
+        [routerLink]="['/app/payments']"
+        [queryParams]="{ cardId: card.cardId }">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+          <line x1="2" y1="10" x2="22" y2="10"></line>
+        </svg>
+        Pay Bill
+      </button>
+
+      <button
+        *ngIf="card.cardStatus === 'ACTIVE'"
+        type="button"
+        class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1"
+        (click)="openSetPinModal()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+        Set PIN
+      </button>
+
       <!-- Only Block Card is available for CUSTOMER role; no Unblock/Replace buttons -->
       <button
         *ngIf="card.cardStatus !== 'BLOCKED'"
@@ -38,6 +75,11 @@
   <div *ngIf="blockSuccessMessage" class="alert alert-success alert-dismissible fade show my-3" role="alert">
     <strong>Success!</strong> {{ blockSuccessMessage }}
     <button type="button" class="btn-close" (click)="blockSuccessMessage = null" aria-label="Close"></button>
+  </div>
+
+  <div *ngIf="pinSuccessMessage" class="alert alert-success alert-dismissible fade show my-3" role="alert">
+    <strong>Security Success:</strong> {{ pinSuccessMessage }}
+    <button type="button" class="btn-close" (click)="pinSuccessMessage = null" aria-label="Close"></button>
   </div>
 
   <!-- Loading State -->
@@ -265,6 +307,122 @@
     <button type="button" class="btn btn-danger d-inline-flex align-items-center gap-2" (click)="confirmBlock()" [disabled]="isBlocking">
       <span *ngIf="isBlocking" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
       {{ isBlocking ? 'Blocking Card...' : 'Confirm Block' }}
+    </button>
+  </div>
+</ng-template>
+
+<!-- Set PIN Modal -->
+<ng-template #setPinModal let-modal>
+  <div class="modal-header border-bottom">
+    <h5 class="modal-title d-flex align-items-center gap-2">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+      </svg>
+      Set Card PIN
+    </h5>
+    <button type="button" class="btn-close" (click)="dismissModal()" aria-label="Close"></button>
+  </div>
+
+  <div class="modal-body">
+    <p class="text-secondary mb-3">
+      Enter a new 4-digit security PIN for card <strong>{{ card?.cardReference }}</strong>.
+    </p>
+
+    <div *ngIf="pinErrorMessage" class="alert alert-danger py-2 px-3 small mb-3">
+      {{ pinErrorMessage }}
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label fw-semibold" for="newPinInput">New 4-Digit PIN <span class="text-danger">*</span></label>
+      <input
+        type="password"
+        id="newPinInput"
+        class="form-control font-monospace"
+        [(ngModel)]="pinInput"
+        maxlength="4"
+        placeholder="••••"
+        autocomplete="new-password">
+      <small class="form-text text-muted">PIN must be exactly 4 numeric digits.</small>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label fw-semibold" for="confirmPinInput">Confirm PIN <span class="text-danger">*</span></label>
+      <input
+        type="password"
+        id="confirmPinInput"
+        class="form-control font-monospace"
+        [(ngModel)]="pinConfirmInput"
+        maxlength="4"
+        placeholder="••••"
+        autocomplete="new-password">
+    </div>
+  </div>
+
+  <div class="modal-footer border-top">
+    <button type="button" class="btn btn-secondary" (click)="dismissModal()" [disabled]="isSubmittingPin">
+      Cancel
+    </button>
+    <button
+      type="button"
+      class="btn btn-primary d-inline-flex align-items-center gap-2"
+      (click)="confirmSetPin()"
+      [disabled]="isSubmittingPin || !pinInput || !pinConfirmInput">
+      <span *ngIf="isSubmittingPin" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+      {{ isSubmittingPin ? 'Setting PIN...' : 'Save PIN' }}
+    </button>
+  </div>
+</ng-template>
+
+<!-- Verify PIN Modal -->
+<ng-template #verifyPinModal let-modal>
+  <div class="modal-header border-bottom">
+    <h5 class="modal-title d-flex align-items-center gap-2">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+      </svg>
+      Verify Card PIN
+    </h5>
+    <button type="button" class="btn-close" (click)="dismissModal()" aria-label="Close"></button>
+  </div>
+
+  <div class="modal-body">
+    <p class="text-secondary mb-3">
+      Enter the 4-digit PIN to verify card security for <strong>{{ card?.cardReference }}</strong>.
+    </p>
+
+    <div *ngIf="pinErrorMessage" class="alert alert-danger py-2 px-3 small mb-3">
+      {{ pinErrorMessage }}
+    </div>
+
+    <div *ngIf="pinVerificationResult === true" class="alert alert-success py-2 px-3 small mb-3">
+      PIN verified successfully!
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label fw-semibold" for="verifyPinInput">4-Digit PIN <span class="text-danger">*</span></label>
+      <input
+        type="password"
+        id="verifyPinInput"
+        class="form-control font-monospace"
+        [(ngModel)]="verifyPinInput"
+        maxlength="4"
+        placeholder="••••"
+        autocomplete="current-password">
+    </div>
+  </div>
+
+  <div class="modal-footer border-top">
+    <button type="button" class="btn btn-secondary" (click)="dismissModal()" [disabled]="isSubmittingPin">
+      Close
+    </button>
+    <button
+      type="button"
+      class="btn btn-primary d-inline-flex align-items-center gap-2"
+      (click)="confirmVerifyPin()"
+      [disabled]="isSubmittingPin || !verifyPinInput">
+      <span *ngIf="isSubmittingPin" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+      {{ isSubmittingPin ? 'Verifying...' : 'Verify' }}
     </button>
   </div>
 </ng-template>

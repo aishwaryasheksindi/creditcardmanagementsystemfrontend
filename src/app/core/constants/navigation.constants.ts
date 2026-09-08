@@ -34,21 +34,21 @@ export const NAVIGATION_ITEMS: NavItem[] = [
     label: 'Payments',
     route: '/app/payments',
     icon: 'payment',
-    roles: ['ADMIN', 'BANK_OFFICER']
+    roles: ['ADMIN', 'BANK_OFFICER', 'CUSTOMER']
   },
   {
     id: 'statements',
     label: 'Statements',
     route: '/app/statements',
     icon: 'document',
-    roles: ['ADMIN', 'BANK_OFFICER']
+    roles: ['ADMIN', 'BANK_OFFICER', 'CUSTOMER']
   },
   {
     id: 'rewards',
     label: 'Rewards',
     route: '/app/rewards',
     icon: 'gift',
-    roles: ['ADMIN']
+    roles: ['ADMIN', 'CUSTOMER']
   },
   {
     id: 'emi',

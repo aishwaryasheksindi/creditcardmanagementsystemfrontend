@@ -1,4 +1,4 @@
-﻿<div class="notification-panel-overlay" *ngIf="isOpen" (click)="onClose()">
+<div class="notification-panel-overlay" *ngIf="isOpen" (click)="onClose()">
   <aside class="notification-panel" (click)="$event.stopPropagation()" role="dialog" aria-label="Notifications Panel">
     <div class="panel-header">
       <div class="panel-title-area">
@@ -14,6 +14,10 @@
     </div>
 
     <div class="panel-body">
+      <div *ngIf="isLoading" class="text-center py-4">
+        <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+        <div class="text-muted small mt-2">Loading notifications...</div>
+      </div>
       <div *ngFor="let item of notifications" class="notification-card">
         <div class="item-icon" [ngClass]="item.type">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

@@ -1,16 +1,248 @@
-﻿<div class="statements-feature">
+<div class="statements-feature">
+  <!-- Page Header -->
   <app-page-header
-    title="Monthly Statements"
-    subtitle="Billing cycles, e-statements, interest accrual, and minimum dues tracking."
-    badgeText="Billing">
+    title="Statements & Invoices"
+    subtitle="Review billing summaries, view itemized charges, and download monthly statements."
+    badgeText="Billing Cycles">
+    <div class="header-actions" *ngIf="isCustomer && cards.length > 0">
+      <div class="d-flex align-items-center gap-2">
+        <label for="headerCardSelect" class="text-white small fw-medium mb-0 text-nowrap">Select Card:</label>
+        <select
+          id="headerCardSelect"
+          class="form-select form-select-sm bg-white text-dark border-0 fw-semibold"
+          [(ngModel)]="selectedCardId"
+          (ngModelChange)="onCardChange()">
+          <option *ngFor="let card of cards" [value]="card.cardId">
+            {{ card.cardReference }} ({{ card.cardStatus }})
+          </option>
+        </select>
+      </div>
+    </div>
   </app-page-header>
 
-  <app-card-container [borderAccent]="true" title="Monthly Statements Overview">
-    <app-empty-state
-      title="Monthly Statements Module Ready"
-      message="This foundation module is established and routing is operational. Integration with Spring Boot backend services will occur in subsequent phases."
-      actionLabel="View Dashboard"
-      (actionClicked)="false">
-    </app-empty-state>
+  <!-- Error Alert -->
+  <div *ngIf="errorMessage" class="alert alert-danger alert-dismissible fade show" role="alert">
+    <strong>Error:</strong> {{ errorMessage }}
+    <button type="button" class="btn-close" (click)="errorMessage = null" aria-label="Close"></button>
+  </div>
+
+  <!-- Card Context Card (for Customer) -->
+  <div class="card border shadow-sm p-3 mb-3 bg-white" *ngIf="selectedCard">
+    <div class="row align-items-center g-3">
+      <div class="col-12 col-md-3 border-end-md">
+        <span class="text-muted small d-block">Active Statement Card</span>
+        <span class="fs-5 fw-bold font-monospace text-dark">{{ selectedCard.cardReference }}</span>
+        <span class="badge ms-2" [ngClass]="selectedCard.cardStatus === 'ACTIVE' ? 'bg-success' : 'bg-secondary'">
+          {{ selectedCard.cardStatus }}
+        </span>
+      </div>
+      <div class="col-6 col-md-3 border-end-md">
+        <span class="text-muted small d-block">Billing Cycle</span>
+        <span class="fw-semibold text-dark">Day {{ selectedCard.billingCycle }} of every month</span>
+      </div>
+      <div class="col-6 col-md-3 border-end-md">
+        <span class="text-muted small d-block">Available / Credit Limit</span>
+        <span class="fw-semibold text-success">{{ selectedCard.availableLimit | currency:'INR':'symbol':'1.0-0' }}</span>
+        <span class="text-muted small"> / {{ selectedCard.creditLimit | currency:'INR':'symbol':'1.0-0' }}</span>
+      </div>
+      <div class="col-12 col-md-3 text-md-end">
+        <a [routerLink]="['/app/payments']" [queryParams]="{ cardId: selectedCard.cardId }" class="btn btn-sm btn-outline-primary">
+          Make a Payment
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Statements List Container -->
+  <app-card-container [borderAccent]="true" title="Statement Archive" subtitle="Issued monthly billing statements and payment settlement obligations">
+    
+    <!-- Loading State -->
+    <div *ngIf="isLoadingStatements || isLoadingCards" class="py-4">
+      <app-loading-spinner message="Loading billing statements..."></app-loading-spinner>
+    </div>
+
+    <!-- Empty State -->
+    <div *ngIf="!isLoadingStatements && !isLoadingCards && statements.length === 0" class="py-3">
+      <app-empty-state
+        title="No Statements Available"
+        message="No statements have been generated for this card yet. Statements are issued automatically at the close of each billing cycle."
+        actionLabel="View Card Details"
+        [routerLink]="['/app/cards']">
+      </app-empty-state>
+    </div>
+
+    <!-- Statements Table -->
+    <div *ngIf="!isLoadingStatements && statements.length > 0" class="table-responsive">
+      <table class="table align-middle table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th scope="col">Statement Date</th>
+            <th scope="col">Payment Due Date</th>
+            <th scope="col">Card Reference</th>
+            <th scope="col" class="text-end">Purchases</th>
+            <th scope="col" class="text-end">Payments / Credits</th>
+            <th scope="col" class="text-end">Minimum Due</th>
+            <th scope="col" class="text-end">Total Due</th>
+            <th scope="col" class="text-center">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let stmt of statements">
+            <td class="text-nowrap">
+              <span class="fw-bold text-dark">{{ stmt.statementDate | date:'mediumDate' }}</span>
+              <small class="d-block text-muted font-monospace">{{ stmt.statementId }}</small>
+            </td>
+            <td class="text-nowrap">
+              <span class="fw-semibold" [class.text-danger]="isDueDatePassed(stmt.dueDate)">
+                {{ stmt.dueDate | date:'mediumDate' }}
+              </span>
+              <span *ngIf="isDueDatePassed(stmt.dueDate)" class="badge bg-danger-subtle text-danger border border-danger-subtle ms-1">
+                Past Due
+              </span>
+            </td>
+            <td>
+              <span class="font-monospace text-secondary">{{ getCardReference(stmt.cardId) }}</span>
+            </td>
+            <td class="text-end font-monospace">
+              {{ stmt.totalPurchases | currency:'INR':'symbol':'1.2-2' }}
+            </td>
+            <td class="text-end font-monospace text-success">
+              {{ (stmt.totalPayments + stmt.totalRefunds) | currency:'INR':'symbol':'1.2-2' }}
+            </td>
+            <td class="text-end font-monospace fw-semibold text-warning-emphasis">
+              {{ stmt.minimumDue | currency:'INR':'symbol':'1.2-2' }}
+            </td>
+            <td class="text-end font-monospace fw-bold fs-6" [class.text-danger]="stmt.closingBalance > 0">
+              {{ stmt.closingBalance | currency:'INR':'symbol':'1.2-2' }}
+            </td>
+            <td class="text-center text-nowrap">
+              <button
+                type="button"
+                class="btn btn-outline-primary btn-sm me-1"
+                (click)="openStatementDetails(stmt)"
+                title="View Full Accounting Breakdown">
+                Details
+              </button>
+              <button
+                type="button"
+                class="btn btn-outline-secondary btn-sm me-1"
+                (click)="downloadStatement(stmt)"
+                title="Download JSON Statement">
+                Download
+              </button>
+              <button
+                type="button"
+                class="btn btn-primary btn-sm"
+                (click)="payStatement(stmt)"
+                title="Pay Statement">
+                Pay Bill
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </app-card-container>
 </div>
+
+<!-- Statement Details Modal -->
+<ng-template #statementDetailsModal let-modal>
+  <div class="modal-header border-bottom">
+    <div>
+      <h5 class="modal-title fw-bold text-primary mb-0">Statement Breakdown</h5>
+      <small class="text-muted font-monospace">{{ selectedStatement?.statementId }} &bull; Statement Date: {{ selectedStatement?.statementDate | date:'longDate' }}</small>
+    </div>
+    <button type="button" class="btn-close" (click)="dismissModal()" aria-label="Close"></button>
+  </div>
+
+  <div class="modal-body" *ngIf="selectedStatement">
+    <!-- Accounting Equation Summary Box -->
+    <div class="card bg-light border p-3 mb-3">
+      <h6 class="fw-bold text-dark border-bottom pb-2 mb-3">Accounting Statement Summary</h6>
+      <div class="row g-2 small">
+        <div class="col-6 col-md-4">
+          <span class="text-muted d-block">Opening Balance:</span>
+          <strong class="font-monospace">{{ selectedStatement.openingBalance | currency:'INR':'symbol':'1.2-2' }}</strong>
+        </div>
+        <div class="col-6 col-md-4">
+          <span class="text-muted d-block">+ Purchases & Debits:</span>
+          <strong class="font-monospace text-danger">{{ selectedStatement.totalPurchases | currency:'INR':'symbol':'1.2-2' }}</strong>
+        </div>
+        <div class="col-6 col-md-4">
+          <span class="text-muted d-block">- Payments:</span>
+          <strong class="font-monospace text-success">-{{ selectedStatement.totalPayments | currency:'INR':'symbol':'1.2-2' }}</strong>
+        </div>
+        <div class="col-6 col-md-4">
+          <span class="text-muted d-block">- Refunds / Credits:</span>
+          <strong class="font-monospace text-success">-{{ selectedStatement.totalRefunds | currency:'INR':'symbol':'1.2-2' }}</strong>
+        </div>
+        <div class="col-6 col-md-4">
+          <span class="text-muted d-block">+ Fees & Charges:</span>
+          <strong class="font-monospace text-danger">{{ selectedStatement.totalFees | currency:'INR':'symbol':'1.2-2' }}</strong>
+        </div>
+        <div class="col-6 col-md-4">
+          <span class="text-muted d-block">+ Interest Accrued:</span>
+          <strong class="font-monospace text-danger">{{ selectedStatement.totalInterest | currency:'INR':'symbol':'1.2-2' }}</strong>
+        </div>
+      </div>
+
+      <hr class="my-2">
+
+      <div class="d-flex justify-content-between align-items-center pt-1">
+        <div>
+          <span class="text-muted small d-block">Minimum Amount Due</span>
+          <span class="fw-bold font-monospace text-dark">{{ selectedStatement.minimumDue | currency:'INR':'symbol':'1.2-2' }}</span>
+          <small class="text-muted ms-1">(Due by {{ selectedStatement.dueDate | date:'mediumDate' }})</small>
+        </div>
+        <div class="text-end">
+          <span class="text-muted small d-block">Total Closing Balance</span>
+          <span class="fs-5 fw-bold font-monospace text-primary">{{ selectedStatement.closingBalance | currency:'INR':'symbol':'1.2-2' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Itemized Line Items -->
+    <h6 class="fw-bold text-dark mt-4 mb-2">Itemized Transactions</h6>
+    <div *ngIf="isLoadingItems" class="py-3 text-center">
+      <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+      <span class="ms-2 small text-muted">Loading statement line items...</span>
+    </div>
+
+    <div *ngIf="itemsErrorMessage && !isLoadingItems" class="alert alert-light border small text-muted py-2">
+      {{ itemsErrorMessage }}
+    </div>
+
+    <div *ngIf="!isLoadingItems && statementItems.length > 0" class="table-responsive">
+      <table class="table table-sm table-hover align-middle mb-0 small">
+        <thead class="table-light">
+          <tr>
+            <th>Date</th>
+            <th>Description</th>
+            <th>Type</th>
+            <th class="text-end">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of statementItems">
+            <td class="text-nowrap">{{ item.itemDate | date:'mediumDate' }}</td>
+            <td>{{ item.description }}</td>
+            <td><span class="badge bg-secondary">{{ item.itemType }}</span></td>
+            <td class="text-end font-monospace fw-semibold">{{ item.amount | currency:'INR':'symbol':'1.2-2' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="modal-footer border-top">
+    <button type="button" class="btn btn-secondary" (click)="dismissModal()">
+      Close
+    </button>
+    <button type="button" class="btn btn-outline-secondary" (click)="downloadStatement(selectedStatement!)" *ngIf="selectedStatement">
+      Download JSON
+    </button>
+    <button type="button" class="btn btn-primary" (click)="payStatement(selectedStatement!)" *ngIf="selectedStatement">
+      Pay Bill
+    </button>
+  </div>
+</ng-template>

@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
+import { switchMap } from 'rxjs/operators';
 import { AuthService } from '../../core/services/auth.service';
 import { CustomerService } from '../../core/services/customer.service';
 import { CardService } from '../../core/services/card.service';
@@ -39,32 +40,24 @@ export class CardsComponent implements OnInit {
       return;
     }
 
-    this.customerService.getMyProfile(forceRefresh).subscribe({
-      next: (customer) => {
+    this.customerService.getMyProfile(forceRefresh).pipe(
+      switchMap((customer) => {
         this.customerId = customer.customerId;
-        this.fetchCardsForCustomer(customer.customerId);
-      },
-      error: (err) => {
-        this.isLoading = false;
-        if (err.status === 404) {
-          this.errorMessage = 'No customer profile found for your account.';
-        } else {
-          this.errorMessage = 'Failed to load customer profile. Please try again.';
-        }
-      }
-    });
-  }
-
-  private fetchCardsForCustomer(customerId: string): void {
-    this.cardService.getCardsByCustomer(customerId).subscribe({
+        return this.cardService.getCardsByCustomer(customer.customerId);
+      })
+    ).subscribe({
       next: (cards) => {
         this.cards = cards || [];
         this.isLoading = false;
       },
-      error: () => {
+      error: (err) => {
         this.cards = [];
         this.isLoading = false;
-        this.errorMessage = 'Failed to load credit cards. Please try again.';
+        if (err.status === 404) {
+          this.errorMessage = 'No customer profile or cards found for your account.';
+        } else {
+          this.errorMessage = 'Failed to load credit cards. Please try again.';
+        }
       }
     });
   }

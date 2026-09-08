@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
+import { switchMap, map } from 'rxjs/operators';
 import { AuthService } from '../../core/services/auth.service';
 import { CustomerService } from '../../core/services/customer.service';
 import { CardService } from '../../core/services/card.service';
@@ -45,25 +46,15 @@ export class DashboardComponent implements OnInit {
     this.isLoading = true;
     this.errorMessage = null;
 
-    this.customerService.getMyProfile(forceRefresh).subscribe({
-      next: (customer) => {
+    this.customerService.getMyProfile(forceRefresh).pipe(
+      switchMap((customer) => {
+        return this.cardService.getCardsByCustomer(customer.customerId).pipe(
+          map((cards) => ({ customer, cards }))
+        );
+      })
+    ).subscribe({
+      next: ({ customer, cards }) => {
         this.customer = customer;
-        this.loadCustomerCards(customer.customerId);
-      },
-      error: (err) => {
-        this.isLoading = false;
-        if (err.status === 404) {
-          this.errorMessage = 'No customer account linked to your profile.';
-        } else {
-          this.errorMessage = 'Failed to load your customer profile. Please try again.';
-        }
-      }
-    });
-  }
-
-  private loadCustomerCards(customerId: string): void {
-    this.cardService.getCardsByCustomer(customerId).subscribe({
-      next: (cards) => {
         this.cards = cards || [];
         this.isLoading = false;
 
@@ -80,10 +71,13 @@ export class DashboardComponent implements OnInit {
           this.recentTransactions = [];
         }
       },
-      error: () => {
-        this.cards = [];
+      error: (err) => {
         this.isLoading = false;
-        this.errorMessage = 'Failed to load credit cards. Please try again.';
+        if (err.status === 404) {
+          this.errorMessage = 'No customer account linked to your profile.';
+        } else {
+          this.errorMessage = 'Failed to load your account dashboard. Please try again.';
+        }
       }
     });
   }
@@ -116,6 +110,10 @@ export class DashboardComponent implements OnInit {
     }
     const currentUser = this.authService.currentUserValue;
     return currentUser?.username || 'Cardholder';
+  }
+
+  get activeCardsCount(): number {
+    return this.cards.filter(c => c.cardStatus === 'ACTIVE').length;
   }
 
   getCardStatusBadge(status: CardStatus | string): string {

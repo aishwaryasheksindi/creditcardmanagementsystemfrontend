@@ -27,4 +27,12 @@ export class CardService {
     };
     return this.http.post<Card>(`${this.baseUrl}/cards/${cardId}/block`, request);
   }
+
+  public setPin(cardId: string, pin: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.baseUrl}/cards/${cardId}/set-pin`, { pin });
+  }
+
+  public verifyPin(cardId: string, pin: string): Observable<{ verified: boolean }> {
+    return this.http.post<{ verified: boolean }>(`${this.baseUrl}/cards/${cardId}/verify-pin`, { pin });
+  }
 }

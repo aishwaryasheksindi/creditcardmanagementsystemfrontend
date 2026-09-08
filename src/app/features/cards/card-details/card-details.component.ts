@@ -25,14 +25,27 @@ export class CardDetailsComponent implements OnInit {
 
   isCustomer: boolean = false;
 
-  // Block Card Modal state
+  // Modals state
   @ViewChild('blockModal') blockModalRef!: TemplateRef<unknown>;
+  @ViewChild('setPinModal') setPinModalRef!: TemplateRef<unknown>;
+  @ViewChild('verifyPinModal') verifyPinModalRef!: TemplateRef<unknown>;
   private activeModal: NgbModalRef | null = null;
+
+  // Block Card state
   blockReason: string = 'Suspected unauthorized activity';
   customReason: string = '';
   isBlocking: boolean = false;
   blockErrorMessage: string | null = null;
   blockSuccessMessage: string | null = null;
+
+  // PIN state
+  pinInput: string = '';
+  pinConfirmInput: string = '';
+  verifyPinInput: string = '';
+  isSubmittingPin: boolean = false;
+  pinErrorMessage: string | null = null;
+  pinSuccessMessage: string | null = null;
+  pinVerificationResult: boolean | null = null;
 
   constructor(
     private route: ActivatedRoute,
@@ -99,6 +112,7 @@ export class CardDetailsComponent implements OnInit {
     });
   }
 
+  // --- Block Card Modal ---
   openBlockModal(): void {
     this.blockReason = 'Suspected unauthorized activity';
     this.customReason = '';
@@ -130,10 +144,7 @@ export class CardDetailsComponent implements OnInit {
         this.isBlocking = false;
         this.card = updatedCard;
         this.blockSuccessMessage = 'Card ' + updatedCard.cardReference + ' has been successfully blocked.';
-        if (this.activeModal) {
-          this.activeModal.close();
-          this.activeModal = null;
-        }
+        this.dismissModal();
       },
       error: (err) => {
         this.isBlocking = false;
@@ -144,6 +155,90 @@ export class CardDetailsComponent implements OnInit {
         } else {
           this.blockErrorMessage = 'Failed to block card. Please try again.';
         }
+      }
+    });
+  }
+
+  // --- Set PIN Modal ---
+  openSetPinModal(): void {
+    this.pinInput = '';
+    this.pinConfirmInput = '';
+    this.pinErrorMessage = null;
+    this.pinSuccessMessage = null;
+    this.activeModal = this.modalService.open(this.setPinModalRef, {
+      centered: true,
+      backdrop: 'static'
+    });
+  }
+
+  confirmSetPin(): void {
+    if (!this.cardId) return;
+
+    const pinPattern = /^\d{4}$/;
+    if (!pinPattern.test(this.pinInput)) {
+      this.pinErrorMessage = 'PIN must be exactly 4 numeric digits.';
+      return;
+    }
+
+    if (this.pinInput !== this.pinConfirmInput) {
+      this.pinErrorMessage = 'PIN confirmation does not match.';
+      return;
+    }
+
+    this.isSubmittingPin = true;
+    this.pinErrorMessage = null;
+
+    this.cardService.setPin(this.cardId, this.pinInput).subscribe({
+      next: (res) => {
+        this.isSubmittingPin = false;
+        this.pinSuccessMessage = res.message || 'Card PIN set successfully.';
+        this.dismissModal();
+      },
+      error: (err) => {
+        this.isSubmittingPin = false;
+        this.pinErrorMessage = err.error?.message || 'Failed to set card PIN. Please try again.';
+      }
+    });
+  }
+
+  // --- Verify PIN Modal ---
+  openVerifyPinModal(): void {
+    this.verifyPinInput = '';
+    this.pinErrorMessage = null;
+    this.pinVerificationResult = null;
+    this.activeModal = this.modalService.open(this.verifyPinModalRef, {
+      centered: true,
+      backdrop: 'static'
+    });
+  }
+
+  confirmVerifyPin(): void {
+    if (!this.cardId) return;
+
+    const pinPattern = /^\d{4}$/;
+    if (!pinPattern.test(this.verifyPinInput)) {
+      this.pinErrorMessage = 'PIN must be exactly 4 numeric digits.';
+      return;
+    }
+
+    this.isSubmittingPin = true;
+    this.pinErrorMessage = null;
+    this.pinVerificationResult = null;
+
+    this.cardService.verifyPin(this.cardId, this.verifyPinInput).subscribe({
+      next: (res) => {
+        this.isSubmittingPin = false;
+        this.pinVerificationResult = res.verified;
+        if (res.verified) {
+          this.pinSuccessMessage = 'Card PIN successfully verified!';
+          setTimeout(() => this.dismissModal(), 1500);
+        } else {
+          this.pinErrorMessage = 'Incorrect PIN entered. Please try again.';
+        }
+      },
+      error: (err) => {
+        this.isSubmittingPin = false;
+        this.pinErrorMessage = err.error?.message || 'Failed to verify PIN.';
       }
     });
   }
