@@ -1,16 +1,171 @@
-﻿<div class="admin-feature">
-  <app-page-header
-    title="Administration"
-    subtitle="Role management, system security parameters, audit trail, and configurations."
-    badgeText="System Ops">
-  </app-page-header>
+<div class="admin-dashboard-page">
+  <div class="mb-4">
+    <app-page-header
+      title="System Administration"
+      subtitle="Central governance portal for staff onboarding, security compliance, and platform operations."
+      badgeText="Platform Governance">
+    </app-page-header>
+  </div>
 
-  <app-card-container [borderAccent]="true" title="Administration Overview">
-    <app-empty-state
-      title="Administration Module Ready"
-      message="This foundation module is established and routing is operational. Integration with Spring Boot backend services will occur in subsequent phases."
-      actionLabel="View Dashboard"
-      (actionClicked)="false">
-    </app-empty-state>
-  </app-card-container>
+  <!-- Real & Roadmap Platform Metrics Grid -->
+  <div class="row g-3 mb-4">
+    <!-- Real Metric 1: Total Staff -->
+    <div class="col-sm-6 col-xl-3">
+      <div class="kpi-card h-100 p-3 rounded shadow-sm border">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <span class="text-muted small fw-semibold text-uppercase">Active Staff</span>
+          <span class="badge bg-success-subtle text-success border border-success-subtle">Live Data</span>
+        </div>
+        <div class="d-flex align-items-baseline gap-2 mb-1">
+          <div class="kpi-value text-dark fw-bold">
+            <span *ngIf="!isLoading && totalStaff !== null">{{ totalStaff }}</span>
+            <span *ngIf="isLoading" class="spinner-border spinner-border-sm text-secondary" role="status"></span>
+          </div>
+          <span class="text-muted small">personnel</span>
+        </div>
+        <div class="small text-muted mb-2">Across Admin, Branch & Fraud teams</div>
+        <a routerLink="/app/admin/staff" class="kpi-link small fw-semibold text-decoration-none">
+          Manage Staff &rarr;
+        </a>
+      </div>
+    </div>
+
+    <!-- Real Metric 2: Audit Logs -->
+    <div class="col-sm-6 col-xl-3">
+      <div class="kpi-card h-100 p-3 rounded shadow-sm border">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <span class="text-muted small fw-semibold text-uppercase">Audit Trail Events</span>
+          <span class="badge bg-success-subtle text-success border border-success-subtle">Live Data</span>
+        </div>
+        <div class="d-flex align-items-baseline gap-2 mb-1">
+          <div class="kpi-value text-dark fw-bold">
+            <span *ngIf="!isLoading && totalAuditLogs !== null">{{ totalAuditLogs }}</span>
+            <span *ngIf="isLoading" class="spinner-border spinner-border-sm text-secondary" role="status"></span>
+          </div>
+          <span class="text-muted small">records</span>
+        </div>
+        <div class="small text-muted mb-2">Immutable security & activity logs</div>
+        <a routerLink="/app/admin/audit-logs" class="kpi-link small fw-semibold text-decoration-none">
+          View Audit Trail &rarr;
+        </a>
+      </div>
+    </div>
+
+    <!-- Placeholder Metric 1: Customers -->
+    <div class="col-sm-6 col-xl-3">
+      <div class="kpi-card h-100 p-3 rounded shadow-sm border opacity-75">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <span class="text-muted small fw-semibold text-uppercase">Cardholders</span>
+          <span class="badge bg-secondary-subtle text-secondary border">Coming Soon</span>
+        </div>
+        <div class="d-flex align-items-baseline gap-2 mb-1">
+          <div class="kpi-value text-muted fw-bold">--</div>
+        </div>
+        <div class="small text-muted">Platform-wide customer profiles</div>
+      </div>
+    </div>
+
+    <!-- Placeholder Metric 2: Cards Issued -->
+    <div class="col-sm-6 col-xl-3">
+      <div class="kpi-card h-100 p-3 rounded shadow-sm border opacity-75">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <span class="text-muted small fw-semibold text-uppercase">Cards Issued</span>
+          <span class="badge bg-secondary-subtle text-secondary border">Coming Soon</span>
+        </div>
+        <div class="d-flex align-items-baseline gap-2 mb-1">
+          <div class="kpi-value text-muted fw-bold">--</div>
+        </div>
+        <div class="small text-muted">Active credit card accounts</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Administrative Action Cards Grid -->
+  <div class="row g-4 mb-4">
+    <!-- Card 1: Staff Directory -->
+    <div class="col-md-6">
+      <app-card-container [borderAccent]="true" title="Staff Management">
+        <p class="text-muted small mb-3">
+          Manage internal users, resolve role privileges across the four organizational staff tiers (Administrators, Bank Officers, Fraud Analysts, Customer Service Agents), and onboard new team members.
+        </p>
+
+        <div class="d-flex flex-wrap gap-2 pt-2">
+          <a routerLink="/app/admin/staff" class="btn btn-primary d-inline-flex align-items-center gap-2">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+            <span>Staff Directory</span>
+          </a>
+
+          <a routerLink="/app/admin/staff/create" class="btn btn-outline-primary d-inline-flex align-items-center gap-2">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            <span>Add Staff Member</span>
+          </a>
+        </div>
+      </app-card-container>
+    </div>
+
+    <!-- Card 2: Audit Logs -->
+    <div class="col-md-6">
+      <app-card-container [borderAccent]="true" title="Audit Trail & Security Logs">
+        <p class="text-muted small mb-3">
+          Inspect immutable system event ledgers, trace user authentication events and administrative record changes, and filter activity logs by entity type and record ID for regulatory compliance.
+        </p>
+
+        <div class="d-flex flex-wrap gap-2 pt-2">
+          <a routerLink="/app/admin/audit-logs" class="btn btn-primary d-inline-flex align-items-center gap-2">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+            </svg>
+            <span>View Audit Logs</span>
+          </a>
+        </div>
+      </app-card-container>
+    </div>
+
+    <!-- Card 3: Card Products (Phase 2 Deferred) -->
+    <div class="col-md-6">
+      <app-card-container title="Credit Card Products & Policies">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">
+            Phase 2 Roadmap
+          </span>
+          <span class="text-muted small">Deliberate Deferral</span>
+        </div>
+        <p class="text-muted small mb-3">
+          Configure credit card product tiers (Platinum, Gold, Titanium), interest calculation policies, credit line ranges, annual fees, and grace period settings.
+        </p>
+        <button type="button" class="btn btn-outline-secondary btn-sm" disabled>
+          Card Type Engine (Phase 2)
+        </button>
+      </app-card-container>
+    </div>
+
+    <!-- Card 4: RBAC Roles (Phase 2 Deferred) -->
+    <div class="col-md-6">
+      <app-card-container title="Roles & Permissions Management">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">
+            Phase 2 Roadmap
+          </span>
+          <span class="text-muted small">Deliberate Deferral</span>
+        </div>
+        <p class="text-muted small mb-3">
+          Manage system role definitions, granular endpoint privilege matrices, and RBAC authorization assignments across internal user accounts.
+        </p>
+        <button type="button" class="btn btn-outline-secondary btn-sm" disabled>
+          Role Configuration (Phase 2)
+        </button>
+      </app-card-container>
+    </div>
+  </div>
 </div>

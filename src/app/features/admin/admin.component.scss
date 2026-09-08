@@ -1,5 +1,49 @@
-﻿.admin-feature {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-lg);
+.admin-dashboard-page {
+  max-width: 1320px;
+  margin: 0 auto;
+
+  .kpi-card {
+    background-color: #ffffff;
+    border-color: #e9ecef;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+    &:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+    }
+  }
+
+  .kpi-value {
+    font-size: 1.85rem;
+    line-height: 1.1;
+  }
+
+  .kpi-link {
+    color: #5C2D56;
+    transition: color 0.2s ease;
+
+    &:hover {
+      color: #803d77;
+    }
+  }
+
+  .btn-primary {
+    background-color: #5C2D56;
+    border-color: #5C2D56;
+
+    &:hover, &:focus {
+      background-color: #4a2445;
+      border-color: #4a2445;
+    }
+  }
+
+  .btn-outline-primary {
+    color: #5C2D56;
+    border-color: #5C2D56;
+
+    &:hover, &:focus {
+      background-color: #5C2D56;
+      border-color: #5C2D56;
+      color: #ffffff;
+    }
+  }
 }

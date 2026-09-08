@@ -1,0 +1,160 @@
+<div class="audit-logs-page">
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <app-page-header
+      title="System Audit Trail"
+      subtitle="Immutable security ledger recording administrative actions, resource modifications, and compliance events."
+      badgeText="Compliance & Security">
+    </app-page-header>
+  </div>
+
+  <!-- Immutable notice banner -->
+  <div class="alert alert-light border d-flex align-items-center gap-3 mb-4 text-muted small py-2 px-3">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5C2D56" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="flex-shrink-0">
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+      <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+    </svg>
+    <div>
+      <strong>Immutable Audit Policy:</strong> All recorded system events are append-only. Records are preserved for regulatory compliance and cannot be modified or deleted.
+    </div>
+  </div>
+
+  <!-- Filter & Search Card -->
+  <div class="filter-card mb-4 p-3 rounded shadow-sm">
+    <div class="row g-3 align-items-end">
+      <div class="col-md-3">
+        <label class="form-label text-muted small fw-semibold">Entity Type</label>
+        <div class="input-group">
+          <input
+            type="text"
+            class="form-control"
+            placeholder="e.g. Staff, User, Card..."
+            list="entityTypeList"
+            [(ngModel)]="filterEntityType"
+            (keyup.enter)="onFilterSubmit()">
+          <datalist id="entityTypeList">
+            <option *ngFor="let et of commonEntityTypes" [value]="et">{{ et }}</option>
+          </datalist>
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label text-muted small fw-semibold">Entity ID</label>
+        <input
+          type="text"
+          class="form-control"
+          placeholder="e.g. STF-001, CRD-1002..."
+          [(ngModel)]="filterEntityId"
+          (keyup.enter)="onFilterSubmit()">
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label text-muted small fw-semibold">Action</label>
+        <select
+          class="form-select"
+          [(ngModel)]="selectedActionFilter"
+          (change)="applyClientFilters()">
+          <option *ngFor="let act of actionFilters" [value]="act">{{ act }}</option>
+        </select>
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label text-muted small fw-semibold">Keyword Filter</label>
+        <input
+          type="text"
+          class="form-control"
+          placeholder="Filter description / user..."
+          [(ngModel)]="searchTerm"
+          (input)="applyClientFilters()">
+      </div>
+
+      <div class="col-md-2 d-flex gap-2">
+        <button
+          type="button"
+          class="btn btn-primary flex-grow-1"
+          (click)="onFilterSubmit()"
+          [disabled]="isLoading">
+          Filter
+        </button>
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          (click)="onResetFilters()"
+          [disabled]="isLoading"
+          title="Reset All Filters">
+          Reset
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <app-loading-spinner *ngIf="isLoading" text="Fetching compliance audit logs..."></app-loading-spinner>
+
+  <!-- Error State -->
+  <app-error-state
+    *ngIf="!isLoading && errorMessage"
+    [title]="'Unable to load audit logs'"
+    [message]="errorMessage"
+    (retryClicked)="loadAuditLogs()">
+  </app-error-state>
+
+  <!-- Content State -->
+  <div *ngIf="!isLoading && !errorMessage">
+    <app-empty-state
+      *ngIf="filteredLogs.length === 0"
+      title="No audit events found"
+      message="No recorded system actions matched the selected filters."
+      actionLabel="Clear Filters"
+      (actionClicked)="onResetFilters()">
+    </app-empty-state>
+
+    <app-card-container
+      *ngIf="filteredLogs.length > 0"
+      [title]="'Audit Ledger (' + filteredLogs.length + ' events)'"
+      [borderAccent]="true">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 audit-table">
+          <thead>
+            <tr>
+              <th scope="col" style="width: 170px;">Timestamp</th>
+              <th scope="col" style="width: 110px;">Action</th>
+              <th scope="col" style="width: 170px;">Entity</th>
+              <th scope="col" style="width: 140px;">Performed By</th>
+              <th scope="col">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let log of filteredLogs">
+              <td>
+                <div class="fw-semibold text-dark small">{{ log.timestamp | date:'MMM d, y' }}</div>
+                <div class="text-muted font-monospace" style="font-size: 0.76rem;">{{ log.timestamp | date:'HH:mm:ss.SSS' }}</div>
+              </td>
+              <td>
+                <span class="badge" [ngClass]="getActionBadgeClass(log.action)">
+                  {{ log.action }}
+                </span>
+              </td>
+              <td>
+                <div class="d-flex flex-column">
+                  <span class="fw-semibold text-dark small">{{ log.entityType || '—' }}</span>
+                  <span class="text-muted font-monospace small" *ngIf="log.entityId">
+                    ID: {{ log.entityId }}
+                  </span>
+                </div>
+              </td>
+              <td>
+                <span class="badge bg-light text-dark font-monospace border">
+                  {{ log.performedByUserId || 'SYSTEM' }}
+                </span>
+              </td>
+              <td>
+                <div class="text-dark small lh-base">{{ log.description }}</div>
+                <div class="text-muted font-monospace" style="font-size: 0.72rem;">Log ID: {{ log.auditLogId }}</div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </app-card-container>
+  </div>
+</div>

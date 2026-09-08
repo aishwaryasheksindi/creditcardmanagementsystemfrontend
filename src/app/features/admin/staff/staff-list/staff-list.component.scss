@@ -1,0 +1,89 @@
+.staff-page {
+  max-width: 1320px;
+  margin: 0 auto;
+
+  .filter-card {
+    background-color: #ffffff;
+    border: 1px solid #e9ecef;
+  }
+
+  .staff-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #5C2D56, #803d77);
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .staff-table {
+    th {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #6c757d;
+      font-weight: 600;
+      padding-top: 0.85rem;
+      padding-bottom: 0.85rem;
+      background-color: #faf8f9;
+      border-bottom: 1px solid #ece4ea;
+    }
+
+    td {
+      padding-top: 0.95rem;
+      padding-bottom: 0.95rem;
+      vertical-align: middle;
+      border-bottom: 1px solid #f1edf0;
+    }
+
+    tbody tr:hover {
+      background-color: #fdfafc;
+    }
+  }
+
+  // Distinct Role Badges
+  .badge-role-admin {
+    background-color: #f4ebf3;
+    color: #5C2D56;
+    border: 1px solid #dfc6dc;
+    font-weight: 600;
+    padding: 0.35rem 0.65rem;
+  }
+
+  .badge-role-officer {
+    background-color: #e6f4ea;
+    color: #137333;
+    border: 1px solid #b7e1cd;
+    font-weight: 600;
+    padding: 0.35rem 0.65rem;
+  }
+
+  .badge-role-fraud {
+    background-color: #fef7e0;
+    color: #b06000;
+    border: 1px solid #f9e29a;
+    font-weight: 600;
+    padding: 0.35rem 0.65rem;
+  }
+
+  .badge-role-agent {
+    background-color: #e8f0fe;
+    color: #1a73e8;
+    border: 1px solid #aecbfa;
+    font-weight: 600;
+    padding: 0.35rem 0.65rem;
+  }
+
+  .badge-role-default {
+    background-color: #f1f3f4;
+    color: #5f6368;
+    border: 1px solid #dadce0;
+    font-weight: 600;
+    padding: 0.35rem 0.65rem;
+  }
+}

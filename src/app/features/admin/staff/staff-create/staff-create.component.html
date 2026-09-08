@@ -1,0 +1,240 @@
+<div class="staff-create-page">
+  <div class="mb-3">
+    <a routerLink="/app/admin/staff" class="back-link d-inline-flex align-items-center gap-2 text-decoration-none">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="19" y1="12" x2="5" y2="12"></line>
+        <polyline points="12 19 5 12 12 5"></polyline>
+      </svg>
+      <span>Back to Staff Directory</span>
+    </a>
+  </div>
+
+  <app-page-header
+    title="Add Staff Member"
+    subtitle="Onboard internal personnel and configure role-based organizational responsibilities."
+    badgeText="Personnel Onboarding">
+  </app-page-header>
+
+  <!-- Success Notification -->
+  <div *ngIf="successMessage" class="alert alert-success d-flex align-items-center gap-2 mb-4" role="alert">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+      <polyline points="22 4 12 14.01 9 11.01"></polyline>
+    </svg>
+    <div>{{ successMessage }}</div>
+  </div>
+
+  <!-- Server Error Notification -->
+  <div *ngIf="serverError" class="alert alert-danger d-flex align-items-center gap-2 mb-4" role="alert">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"></circle>
+      <line x1="12" y1="8" x2="12" y2="12"></line>
+      <line x1="12" y1="16" x2="12.01" y2="16"></line>
+    </svg>
+    <div>{{ serverError }}</div>
+  </div>
+
+  <app-card-container [borderAccent]="true" title="Staff Profile Details">
+    <form [formGroup]="staffForm" (ngSubmit)="onSubmit()" novalidate>
+
+      <!-- Section 1: Staff Type Selection -->
+      <div class="mb-4">
+        <label class="form-label fw-semibold text-dark mb-2">1. Select Staff Role Type <span class="text-danger">*</span></label>
+        <div class="row g-3">
+          <div *ngFor="let st of staffTypes" class="col-md-6 col-lg-3">
+            <label
+              class="staff-type-card h-100 p-3 rounded border d-flex flex-column cursor-pointer"
+              [class.selected]="staffForm.get('staffType')?.value === st.value">
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="fw-semibold text-dark">{{ st.label }}</span>
+                <input
+                  type="radio"
+                  formControlName="staffType"
+                  [value]="st.value"
+                  class="form-check-input mt-0">
+              </div>
+              <small class="text-muted lh-sm">{{ st.description }}</small>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <hr class="my-4 text-secondary opacity-25">
+
+      <!-- Section 2: Account Association -->
+      <div class="mb-4">
+        <h6 class="fw-semibold text-dark mb-3">2. User Account Association</h6>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label for="userId" class="form-label">User ID <span class="text-danger">*</span></label>
+            <input
+              id="userId"
+              type="text"
+              class="form-control"
+              [class.is-invalid]="isFieldInvalid('userId')"
+              formControlName="userId"
+              placeholder="e.g. USR-001 or UUID">
+            <div class="form-text text-muted">
+              Enter the unique User ID of the registered user account that will be linked to this staff profile.
+            </div>
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('userId')">
+              User ID is required.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <hr class="my-4 text-secondary opacity-25">
+
+      <!-- Section 3: Personal Information -->
+      <div class="mb-4">
+        <h6 class="fw-semibold text-dark mb-3">3. Personal & Contact Information</h6>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label for="empName" class="form-label">Full Name <span class="text-danger">*</span></label>
+            <input
+              id="empName"
+              type="text"
+              class="form-control"
+              [class.is-invalid]="isFieldInvalid('empName')"
+              formControlName="empName"
+              placeholder="e.g. Sarah Jenkins">
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('empName')">
+              Full name is required (maximum 100 characters).
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <label for="empPhone" class="form-label">Phone Number <span class="text-danger">*</span></label>
+            <input
+              id="empPhone"
+              type="tel"
+              class="form-control"
+              [class.is-invalid]="isFieldInvalid('empPhone')"
+              formControlName="empPhone"
+              placeholder="e.g. +1 555-0144">
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('empPhone')">
+              Phone number is required (maximum 20 characters).
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <label for="empDob" class="form-label">Date of Birth <span class="text-danger">*</span></label>
+            <input
+              id="empDob"
+              type="date"
+              class="form-control"
+              [class.is-invalid]="isFieldInvalid('empDob')"
+              formControlName="empDob">
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('empDob')">
+              Date of birth is required.
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <label for="empAddress" class="form-label">Residential Address <span class="text-danger">*</span></label>
+            <input
+              id="empAddress"
+              type="text"
+              class="form-control"
+              [class.is-invalid]="isFieldInvalid('empAddress')"
+              formControlName="empAddress"
+              placeholder="e.g. 124 Financial Plaza, Suite 400">
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('empAddress')">
+              Address is required (maximum 255 characters).
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <hr class="my-4 text-secondary opacity-25">
+
+      <!-- Section 4: Employment Details -->
+      <div class="mb-4">
+        <h6 class="fw-semibold text-dark mb-3">4. Employment & Assignment</h6>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label for="empDesignation" class="form-label">Job Designation <span class="text-danger">*</span></label>
+            <input
+              id="empDesignation"
+              type="text"
+              class="form-control"
+              [class.is-invalid]="isFieldInvalid('empDesignation')"
+              formControlName="empDesignation"
+              placeholder="e.g. Credit Operations Specialist, Branch Officer...">
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('empDesignation')">
+              Designation is required (maximum 100 characters).
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <label for="empJoiningDate" class="form-label">Joining Date <span class="text-danger">*</span></label>
+            <input
+              id="empJoiningDate"
+              type="date"
+              class="form-control"
+              [class.is-invalid]="isFieldInvalid('empJoiningDate')"
+              formControlName="empJoiningDate">
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('empJoiningDate')">
+              Date of joining is required.
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <label for="empStatus" class="form-label">Employment Status <span class="text-danger">*</span></label>
+            <select
+              id="empStatus"
+              class="form-select"
+              [class.is-invalid]="isFieldInvalid('empStatus')"
+              formControlName="empStatus">
+              <option value="ACTIVE">ACTIVE</option>
+              <option value="PROBATION">PROBATION</option>
+              <option value="INACTIVE">INACTIVE</option>
+            </select>
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('empStatus')">
+              Status is required.
+            </div>
+          </div>
+
+          <!-- Branch Code: Conditional for Bank Officer -->
+          <div class="col-md-6" *ngIf="staffForm.get('staffType')?.value === 'BANK_OFFICER'">
+            <label for="branchCode" class="form-label">
+              Branch Code <span class="text-danger">*</span>
+              <span class="badge bg-light text-secondary border ms-1">Bank Officer Only</span>
+            </label>
+            <input
+              id="branchCode"
+              type="text"
+              class="form-control"
+              [class.is-invalid]="isFieldInvalid('branchCode')"
+              formControlName="branchCode"
+              placeholder="e.g. BR-CENTRAL-01">
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('branchCode')">
+              Branch code is required for Bank Officers (maximum 50 characters).
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Submit & Cancel Actions -->
+      <div class="d-flex align-items-center justify-content-end gap-3 pt-3">
+        <button
+          type="button"
+          class="btn btn-outline-secondary px-4"
+          (click)="onCancel()"
+          [disabled]="isSubmitting">
+          Cancel
+        </button>
+
+        <button
+          type="submit"
+          class="btn btn-primary px-4 d-inline-flex align-items-center gap-2"
+          [disabled]="isSubmitting">
+          <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+          <span>{{ isSubmitting ? 'Registering Staff...' : 'Register Staff Member' }}</span>
+        </button>
+      </div>
+
+    </form>
+  </app-card-container>
+</div>

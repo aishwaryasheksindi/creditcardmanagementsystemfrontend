@@ -1,0 +1,163 @@
+<div class="staff-page">
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <app-page-header
+      title="Staff Directory"
+      subtitle="Inspect internal personnel, system privileges, and onboard authorized system operators."
+      badgeText="Personnel">
+    </app-page-header>
+
+    <div class="header-actions">
+      <a routerLink="/app/admin/staff/create" class="btn btn-primary d-inline-flex align-items-center gap-2">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        <span>Add Staff Member</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Search & Filter Controls -->
+  <div class="filter-card mb-4 p-3 rounded shadow-sm">
+    <div class="row g-3 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label text-muted small fw-semibold">Search by Name / ID / Designation</label>
+        <div class="input-group">
+          <span class="input-group-text bg-white">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+          </span>
+          <input
+            type="text"
+            class="form-control"
+            placeholder="e.g. John Doe, STF-001..."
+            [(ngModel)]="searchName"
+            (keyup.enter)="onSearch()">
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label text-muted small fw-semibold">Phone Number</label>
+        <input
+          type="text"
+          class="form-control"
+          placeholder="e.g. +1 555-0199"
+          [(ngModel)]="searchPhone"
+          (keyup.enter)="onSearch()">
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label text-muted small fw-semibold">Role Filter</label>
+        <select
+          class="form-select"
+          [(ngModel)]="selectedRoleFilter"
+          (change)="applyClientFilters()">
+          <option value="ALL">All Roles</option>
+          <option value="ADMIN">Administrator</option>
+          <option value="BANK_OFFICER">Bank Officer</option>
+          <option value="FRAUD_ANALYST">Fraud Analyst</option>
+          <option value="CUSTOMER_SERVICE">Customer Service Agent</option>
+        </select>
+      </div>
+
+      <div class="col-md-2 d-flex gap-2">
+        <button type="button" class="btn btn-primary flex-grow-1" (click)="onSearch()" [disabled]="isLoading">
+          Search
+        </button>
+        <button type="button" class="btn btn-outline-secondary" (click)="onClearSearch()" [disabled]="isLoading" title="Reset Filters">
+          Reset
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <app-loading-spinner *ngIf="isLoading" text="Retrieving staff personnel records..."></app-loading-spinner>
+
+  <!-- Error State -->
+  <app-error-state
+    *ngIf="!isLoading && errorMessage"
+    [title]="'Unable to load staff directory'"
+    [message]="errorMessage"
+    (retryClicked)="loadStaff()">
+  </app-error-state>
+
+  <!-- Content State -->
+  <div *ngIf="!isLoading && !errorMessage">
+    <app-empty-state
+      *ngIf="filteredStaff.length === 0"
+      title="No staff members found"
+      message="No staff records matched your search query or role filter."
+      actionLabel="Reset Search"
+      (actionClicked)="onClearSearch()">
+    </app-empty-state>
+
+    <app-card-container
+      *ngIf="filteredStaff.length > 0"
+      [title]="'Active Staff Personnel (' + filteredStaff.length + ')'"
+      [borderAccent]="true">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 staff-table">
+          <thead>
+            <tr>
+              <th scope="col">Staff Member</th>
+              <th scope="col">Assigned Role</th>
+              <th scope="col">Designation</th>
+              <th scope="col">Contact Details</th>
+              <th scope="col">Branch Code</th>
+              <th scope="col">Joined</th>
+              <th scope="col">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let staff of filteredStaff">
+              <td>
+                <div class="d-flex align-items-center gap-3">
+                  <div class="staff-avatar">
+                    {{ (staff.empName || 'S').charAt(0).toUpperCase() }}
+                  </div>
+                  <div>
+                    <div class="fw-semibold text-dark">{{ staff.empName }}</div>
+                    <div class="text-muted small font-monospace">ID: {{ staff.staffId }}</div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <span class="badge" [ngClass]="getRoleBadgeClass(staff.roleName)">
+                  {{ formatRoleLabel(staff.roleName) }}
+                </span>
+              </td>
+              <td>
+                <span class="text-secondary fw-medium">{{ staff.empDesignation }}</span>
+              </td>
+              <td>
+                <div>
+                  <div class="text-dark small">{{ staff.empPhone }}</div>
+                  <div class="text-muted small text-truncate" style="max-width: 180px;" [title]="staff.empAddress">
+                    {{ staff.empAddress }}
+                  </div>
+                </div>
+              </td>
+              <td>
+                <span class="font-monospace text-secondary" *ngIf="staff.branchCode">
+                  {{ staff.branchCode }}
+                </span>
+                <span class="text-muted" *ngIf="!staff.branchCode">—</span>
+              </td>
+              <td>
+                <span class="text-muted small">{{ staff.empJoiningDate | date:'mediumDate' }}</span>
+              </td>
+              <td>
+                <span class="badge bg-success-subtle text-success border border-success-subtle">
+                  {{ staff.empStatus || 'ACTIVE' }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </app-card-container>
+  </div>
+</div>

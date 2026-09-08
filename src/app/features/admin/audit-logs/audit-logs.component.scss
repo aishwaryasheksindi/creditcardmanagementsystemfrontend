@@ -1,0 +1,75 @@
+.audit-logs-page {
+  max-width: 1320px;
+  margin: 0 auto;
+
+  .filter-card {
+    background-color: #ffffff;
+    border: 1px solid #e9ecef;
+  }
+
+  .audit-table {
+    th {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #6c757d;
+      font-weight: 600;
+      padding-top: 0.85rem;
+      padding-bottom: 0.85rem;
+      background-color: #faf8f9;
+      border-bottom: 1px solid #ece4ea;
+    }
+
+    td {
+      padding-top: 0.95rem;
+      padding-bottom: 0.95rem;
+      vertical-align: middle;
+      border-bottom: 1px solid #f1edf0;
+    }
+
+    tbody tr:hover {
+      background-color: #fdfafc;
+    }
+  }
+
+  // Action Badges
+  .badge-action-create {
+    background-color: #e6f4ea;
+    color: #137333;
+    border: 1px solid #b7e1cd;
+    font-weight: 600;
+    padding: 0.35rem 0.6rem;
+  }
+
+  .badge-action-update {
+    background-color: #e8f0fe;
+    color: #1a73e8;
+    border: 1px solid #aecbfa;
+    font-weight: 600;
+    padding: 0.35rem 0.6rem;
+  }
+
+  .badge-action-delete {
+    background-color: #fce8e6;
+    color: #c5221f;
+    border: 1px solid #fad2cf;
+    font-weight: 600;
+    padding: 0.35rem 0.6rem;
+  }
+
+  .badge-action-auth {
+    background-color: #f4ebf3;
+    color: #5C2D56;
+    border: 1px solid #dfc6dc;
+    font-weight: 600;
+    padding: 0.35rem 0.6rem;
+  }
+
+  .badge-action-default {
+    background-color: #f1f3f4;
+    color: #5f6368;
+    border: 1px solid #dadce0;
+    font-weight: 600;
+    padding: 0.35rem 0.6rem;
+  }
+}

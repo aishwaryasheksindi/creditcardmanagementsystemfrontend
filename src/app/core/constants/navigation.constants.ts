@@ -91,5 +91,19 @@ export const NAVIGATION_ITEMS: NavItem[] = [
     route: '/app/admin',
     icon: 'settings',
     roles: ['ADMIN']
+  },
+  {
+    id: 'admin-staff',
+    label: 'Staff Directory',
+    route: '/app/admin/staff',
+    icon: 'user',
+    roles: ['ADMIN']
+  },
+  {
+    id: 'admin-audit',
+    label: 'Audit Trail',
+    route: '/app/admin/audit-logs',
+    icon: 'document',
+    roles: ['ADMIN']
   }
 ];
