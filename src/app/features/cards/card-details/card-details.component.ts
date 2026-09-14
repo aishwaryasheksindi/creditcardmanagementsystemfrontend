@@ -28,6 +28,7 @@ export class CardDetailsComponent implements OnInit {
 
   // Modals state
   @ViewChild('blockModal') blockModalRef!: TemplateRef<unknown>;
+  @ViewChild('unblockModal') unblockModalRef!: TemplateRef<unknown>;
   @ViewChild('setPinModal') setPinModalRef!: TemplateRef<unknown>;
   @ViewChild('verifyPinModal') verifyPinModalRef!: TemplateRef<unknown>;
   @ViewChild('activateModal') activateModalRef!: TemplateRef<unknown>;
@@ -46,6 +47,14 @@ export class CardDetailsComponent implements OnInit {
   isBlocking: boolean = false;
   blockErrorMessage: string | null = null;
   blockSuccessMessage: string | null = null;
+
+  // Unblock Card state
+  unblockReason: string = 'Customer identity confirmed and unblock authorized';
+  customUnblockReason: string = '';
+  isUnblocking: boolean = false;
+  unblockErrorMessage: string | null = null;
+  unblockSuccessMessage: string | null = null;
+  isStaffOrOfficer: boolean = false;
 
   // PIN state
   pinInput: string = '';
@@ -70,6 +79,7 @@ export class CardDetailsComponent implements OnInit {
 
   ngOnInit(): void {
     this.isCustomer = this.authService.hasRole('CUSTOMER');
+    this.isStaffOrOfficer = this.authService.hasRole('ADMIN') || this.authService.hasRole('BANK_OFFICER');
     this.route.paramMap.subscribe((params) => {
       const id = params.get('cardId');
       if (id) {
@@ -185,6 +195,59 @@ export class CardDetailsComponent implements OnInit {
             this.blockErrorMessage = 'You do not have permission to block this card.';
           } else {
             this.blockErrorMessage = 'Failed to block card. Please try again.';
+          }
+          this.cdr.markForCheck();
+        });
+      }
+    });
+  }
+
+  // --- Unblock Card Modal ---
+  openUnblockModal(): void {
+    this.unblockReason = 'Customer identity confirmed and unblock authorized';
+    this.customUnblockReason = '';
+    this.unblockErrorMessage = null;
+    this.activeModal = this.modalService.open(this.unblockModalRef, {
+      centered: true,
+      backdrop: 'static'
+    });
+  }
+
+  confirmUnblock(): void {
+    if (!this.cardId) return;
+
+    let finalReason = this.unblockReason;
+    if (this.unblockReason === 'Other' && this.customUnblockReason.trim()) {
+      finalReason = this.customUnblockReason.trim();
+    }
+
+    if (!finalReason || !finalReason.trim()) {
+      this.unblockErrorMessage = 'A reason is required to unblock this card.';
+      return;
+    }
+
+    this.isUnblocking = true;
+    this.unblockErrorMessage = null;
+
+    this.cardService.unblockCard(this.cardId, finalReason).subscribe({
+      next: (updatedCard) => {
+        this.ngZone.run(() => {
+          this.isUnblocking = false;
+          this.card = updatedCard;
+          this.unblockSuccessMessage = 'Card ' + maskCardReference(updatedCard.cardReference) + ' has been successfully unblocked and reset to ACTIVE status.';
+          this.dismissModal();
+          this.cdr.markForCheck();
+        });
+      },
+      error: (err) => {
+        this.ngZone.run(() => {
+          this.isUnblocking = false;
+          if (err.error?.message) {
+            this.unblockErrorMessage = err.error.message;
+          } else if (err.status === 403) {
+            this.unblockErrorMessage = 'You do not have permission to unblock this card.';
+          } else {
+            this.unblockErrorMessage = 'Failed to unblock card. Please try again.';
           }
           this.cdr.markForCheck();
         });

@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, of } from 'rxjs';
 import { tap, shareReplay } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
-import { Customer, CustomerRegistrationRequest } from '../models/customer.model';
+import { Customer, CustomerRegistrationRequest, KycDocument } from '../models/customer.model';
 import { AuthService } from './auth.service';
 
 @Injectable({
@@ -40,6 +40,26 @@ export class CustomerService {
       }),
       shareReplay(1)
     );
+  }
+
+  public getAllCustomers(): Observable<Customer[]> {
+    return this.http.get<Customer[]>(`${this.baseUrl}/customers`);
+  }
+
+  public getKycDocuments(customerId: string): Observable<KycDocument[]> {
+    return this.http.get<KycDocument[]>(`${this.baseUrl}/kyc-documents?customerId=${customerId}`);
+  }
+
+  public getAllKycDocuments(): Observable<KycDocument[]> {
+    return this.http.get<KycDocument[]>(`${this.baseUrl}/kyc-documents`);
+  }
+
+  public verifyKycDocument(documentId: string): Observable<KycDocument> {
+    return this.http.put<KycDocument>(`${this.baseUrl}/kyc-documents/${documentId}/verify`, {});
+  }
+
+  public rejectKycDocument(documentId: string, reason: string): Observable<KycDocument> {
+    return this.http.put<KycDocument>(`${this.baseUrl}/kyc-documents/${documentId}/reject?reason=${encodeURIComponent(reason)}`, {});
   }
 
   public registerCustomer(registrationDto: CustomerRegistrationRequest): Observable<Customer> {

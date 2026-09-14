@@ -1,16 +1,251 @@
-﻿<div class="disputes-feature">
+<div class="disputes-feature container-fluid px-0">
   <app-page-header
     title="Disputes & Chargebacks"
-    subtitle="Transaction dispute resolution lifecycle, merchant documentation, and claims."
-    badgeText="Arbitration">
+    subtitle="Manage and monitor transaction dispute resolutions, claims, and merchant arbitrations."
+    badgeText="Disputes">
+    <div header-actions class="d-flex align-items-center gap-2">
+      <button type="button" class="btn btn-secondary btn-sm d-inline-flex align-items-center gap-2" (click)="loadDisputesData(true)" [disabled]="isLoading">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+        </svg>
+        Refresh
+      </button>
+
+      <button
+        type="button"
+        class="btn btn-primary btn-sm d-inline-flex align-items-center gap-2"
+        (click)="openRaiseDisputeModal()"
+        [disabled]="transactions.length === 0 || isLoading">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        File Dispute
+      </button>
+    </div>
   </app-page-header>
 
-  <app-card-container [borderAccent]="true" title="Disputes & Chargebacks Overview">
-    <app-empty-state
-      title="Disputes & Chargebacks Module Ready"
-      message="This foundation module is established and routing is operational. Integration with Spring Boot backend services will occur in subsequent phases."
-      actionLabel="View Dashboard"
-      (actionClicked)="false">
-    </app-empty-state>
-  </app-card-container>
+  <!-- Success Notification -->
+  <div *ngIf="successMessage" class="alert alert-success alert-dismissible fade show my-3 shadow-sm rounded-3" role="alert">
+    <div class="d-flex align-items-center gap-2">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="20 6 9 17 4 12"></polyline>
+      </svg>
+      <span>{{ successMessage }}</span>
+    </div>
+    <button type="button" class="btn-close" (click)="successMessage = null" aria-label="Close"></button>
+  </div>
+
+  <!-- Loading State -->
+  <div class="my-4" *ngIf="isLoading">
+    <app-loading-spinner message="Loading dispute records..."></app-loading-spinner>
+  </div>
+
+  <!-- Error State -->
+  <div class="my-4" *ngIf="errorMessage && !isLoading">
+    <app-error-state
+      title="Unable to Load Disputes"
+      [message]="errorMessage"
+      (retry)="loadDisputesData(true)">
+    </app-error-state>
+  </div>
+
+  <!-- Main Content -->
+  <div *ngIf="!isLoading && !errorMessage">
+    <!-- Filter Tabs -->
+    <div class="d-flex align-items-center gap-2 mb-3 overflow-auto pb-1">
+      <button
+        type="button"
+        class="btn btn-sm"
+        [ngClass]="selectedStatusFilter === 'ALL' ? 'btn-dark' : 'btn-outline-secondary'"
+        (click)="onFilterChange('ALL')">
+        All ({{ disputes.length }})
+      </button>
+      <button
+        type="button"
+        class="btn btn-sm"
+        [ngClass]="selectedStatusFilter === 'RAISED' ? 'btn-warning' : 'btn-outline-secondary'"
+        (click)="onFilterChange('RAISED')">
+        Raised
+      </button>
+      <button
+        type="button"
+        class="btn btn-sm"
+        [ngClass]="selectedStatusFilter === 'UNDER_REVIEW' ? 'btn-info' : 'btn-outline-secondary'"
+        (click)="onFilterChange('UNDER_REVIEW')">
+        Under Review
+      </button>
+      <button
+        type="button"
+        class="btn btn-sm"
+        [ngClass]="selectedStatusFilter === 'RESOLVED' ? 'btn-success' : 'btn-outline-secondary'"
+        (click)="onFilterChange('RESOLVED')">
+        Resolved
+      </button>
+    </div>
+
+    <!-- Empty State -->
+    <div *ngIf="filteredDisputes.length === 0" class="my-4">
+      <app-card-container [borderAccent]="true">
+        <app-empty-state
+          title="No Disputes Found"
+          message="No active or past transaction disputes registered under your account."
+          [actionLabel]="transactions.length > 0 ? 'File a Dispute' : ''"
+          (actionClicked)="openRaiseDisputeModal()">
+        </app-empty-state>
+      </app-card-container>
+    </div>
+
+    <!-- Disputes Table -->
+    <div *ngIf="filteredDisputes.length > 0" class="card border-0 rounded-4 shadow-sm overflow-hidden">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Dispute ID</th>
+              <th>Transaction</th>
+              <th>Dispute Type</th>
+              <th>Description</th>
+              <th>Status</th>
+              <th>Raised Date</th>
+              <th>Resolved Date</th>
+              <th *ngIf="!isCustomer" class="text-end">Staff Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let d of filteredDisputes">
+              <td class="font-monospace fw-semibold">{{ d.disputeId }}</td>
+              <td class="font-monospace text-primary">{{ d.transactionId }}</td>
+              <td>
+                <span class="badge bg-light text-dark border">{{ d.disputeType }}</span>
+              </td>
+              <td class="text-truncate" style="max-width: 280px;" [title]="d.description">
+                {{ d.description }}
+              </td>
+              <td>
+                <span class="badge" [ngClass]="getStatusBadgeClass(d.status)">
+                  {{ d.status }}
+                </span>
+              </td>
+              <td class="small text-secondary">{{ d.raisedAt | date:'medium' }}</td>
+              <td class="small text-secondary">{{ d.resolvedAt ? (d.resolvedAt | date:'medium') : 'Pending' }}</td>
+              <td *ngIf="!isCustomer" class="text-end">
+                <div class="d-inline-flex gap-1" *ngIf="d.status === 'RAISED' || d.status === 'UNDER_REVIEW'">
+                  <button type="button" class="btn btn-sm btn-success py-0 px-2" (click)="updateStatus(d.disputeId, 'RESOLVED')">Resolve</button>
+                  <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" (click)="updateStatus(d.disputeId, 'REJECTED')">Reject</button>
+                </div>
+                <span *ngIf="d.status !== 'RAISED' && d.status !== 'UNDER_REVIEW'" class="badge bg-light text-muted border">Completed</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Raise Dispute Modal -->
+  <ng-template #raiseDisputeModal let-modal>
+    <div class="modal-header border-bottom">
+      <div class="d-flex align-items-center gap-2">
+        <div class="p-2 rounded bg-primary-subtle text-primary">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+        </div>
+        <div>
+          <h5 class="modal-title mb-0 fw-bold">File Transaction Dispute</h5>
+          <span class="small text-muted">Submit a transaction claim for merchant investigation</span>
+        </div>
+      </div>
+      <button type="button" class="btn-close" (click)="closeModal()" aria-label="Close"></button>
+    </div>
+
+    <form [formGroup]="disputeForm" (ngSubmit)="onSubmitDispute()">
+      <div class="modal-body p-4">
+        <!-- Error Alert in Modal -->
+        <div *ngIf="formErrorMessage" class="alert alert-danger py-2 small mb-3">
+          {{ formErrorMessage }}
+        </div>
+
+        <!-- AI Classification Result -->
+        <div *ngIf="aiClassification" class="alert alert-info py-2 mb-3 rounded-3">
+          <div class="d-flex align-items-center justify-content-between mb-1">
+            <span class="fw-bold small d-flex align-items-center gap-1">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+                <rect x="9" y="9" width="6" height="6"></rect>
+              </svg>
+              AI Dispute Classification
+            </span>
+            <span class="badge bg-primary">Confidence: {{ (aiClassification.confidenceScore * 100) | number:'1.0-0' }}%</span>
+          </div>
+          <p class="mb-1 small"><strong>Suggested Type:</strong> {{ aiClassification.suggestedType }} (Priority: {{ aiClassification.priority }})</p>
+          <p class="mb-0 small text-secondary">{{ aiClassification.explanation }}</p>
+        </div>
+
+        <!-- Transaction Selector -->
+        <div class="mb-3">
+          <label for="txnSelect" class="form-label small fw-semibold">Select Disputed Transaction <span class="text-danger">*</span></label>
+          <select id="txnSelect" class="form-select" formControlName="transactionId">
+            <option value="" disabled>-- Select Transaction --</option>
+            <option *ngFor="let t of transactions" [value]="t.transactionId">
+              {{ t.transactionId }} - {{ t.amount | currency:'INR':'symbol':'1.0-0' }} ({{ t.transactionDate | date:'mediumDate' }})
+            </option>
+          </select>
+        </div>
+
+        <!-- Dispute Type -->
+        <div class="mb-3">
+          <label for="disputeType" class="form-label small fw-semibold">Dispute Category <span class="text-danger">*</span></label>
+          <select id="disputeType" class="form-select" formControlName="disputeType">
+            <option *ngFor="let dt of disputeTypes" [value]="dt.value">{{ dt.label }}</option>
+          </select>
+        </div>
+
+        <!-- Description -->
+        <div class="mb-3">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <label for="description" class="form-label small fw-semibold mb-0">Description / Reason <span class="text-danger">*</span></label>
+            <button
+              type="button"
+              class="btn btn-outline-primary btn-sm py-0 px-2"
+              (click)="classifyWithAi()"
+              [disabled]="isClassifying || !disputeForm.get('description')?.value">
+              <span *ngIf="isClassifying" class="spinner-border spinner-border-sm me-1"></span>
+              <span *ngIf="!isClassifying">AI Assist</span>
+            </button>
+          </div>
+          <textarea
+            id="description"
+            rows="3"
+            class="form-control"
+            placeholder="Provide specific details about the disputed charge..."
+            formControlName="description"></textarea>
+          <div class="form-text small">Explain why this charge is disputed. Minimum 10 characters.</div>
+        </div>
+
+        <!-- Evidence Reference -->
+        <div class="mb-3">
+          <label for="evidenceReference" class="form-label small fw-semibold">Evidence Reference / Receipt URL (Optional)</label>
+          <input
+            id="evidenceReference"
+            type="text"
+            class="form-control"
+            placeholder="e.g. RECEIPT-2026-09 or invoice number"
+            formControlName="evidenceReference">
+        </div>
+      </div>
+
+      <div class="modal-footer border-top bg-light">
+        <button type="button" class="btn btn-secondary btn-sm" (click)="closeModal()" [disabled]="isSubmittingDispute">Cancel</button>
+        <button type="submit" class="btn btn-danger btn-sm px-3" [disabled]="disputeForm.invalid || isSubmittingDispute">
+          <span *ngIf="isSubmittingDispute" class="spinner-border spinner-border-sm me-1"></span>
+          Submit Dispute
+        </button>
+      </div>
+    </form>
+  </ng-template>
 </div>

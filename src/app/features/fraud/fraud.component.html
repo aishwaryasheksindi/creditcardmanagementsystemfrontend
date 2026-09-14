@@ -1,16 +1,303 @@
-﻿<div class="fraud-feature">
+<div class="fraud-feature container-fluid px-0">
   <app-page-header
-    title="Fraud Monitoring"
-    subtitle="Suspicious activity detection, rule management, and card containment actions."
-    badgeText="Security">
+    title="Fraud Monitoring &amp; Risk Telemetry"
+    subtitle="Suspicious transaction containment, real-time risk scores, rule violations, and fraud investigations."
+    badgeText="Security Center">
+    <div header-actions>
+      <button type="button" class="btn btn-secondary btn-sm d-inline-flex align-items-center gap-2" (click)="loadData()" [disabled]="isLoading">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+        </svg>
+        Refresh Telemetry
+      </button>
+    </div>
   </app-page-header>
 
-  <app-card-container [borderAccent]="true" title="Fraud Monitoring Overview">
-    <app-empty-state
-      title="Fraud Monitoring Module Ready"
-      message="This foundation module is established and routing is operational. Integration with Spring Boot backend services will occur in subsequent phases."
-      actionLabel="View Dashboard"
-      (actionClicked)="false">
-    </app-empty-state>
-  </app-card-container>
+  <!-- Action Alert -->
+  <div *ngIf="actionMessage" class="alert alert-info alert-dismissible fade show my-3 rounded-3 shadow-sm" role="alert">
+    <span>{{ actionMessage }}</span>
+    <button type="button" class="btn-close" (click)="actionMessage = null" aria-label="Close"></button>
+  </div>
+
+  <!-- Loading State -->
+  <div class="my-4" *ngIf="isLoading">
+    <app-loading-spinner message="Querying fraud intelligence pipeline..."></app-loading-spinner>
+  </div>
+
+  <!-- Error State -->
+  <div class="my-4" *ngIf="errorMessage && !isLoading">
+    <app-error-state
+      title="Unable to Load Fraud Telemetry"
+      [message]="errorMessage"
+      (retry)="loadData()">
+    </app-error-state>
+  </div>
+
+  <div *ngIf="!isLoading && !errorMessage">
+    <!-- 4 Security KPI Cards -->
+    <div class="row g-3 g-md-4 mb-4">
+      <div class="col-6 col-xl-3">
+        <app-card-container [borderAccent]="true">
+          <div class="metric-card d-flex flex-column gap-1">
+            <span class="metric-label text-uppercase fw-semibold small text-muted">Total Alerts</span>
+            <div class="metric-value-row d-flex align-items-center justify-content-between my-1">
+              <span class="fs-4 fw-bold text-dark">{{ totalAlertsCount }}</span>
+              <span class="badge bg-secondary-subtle text-dark border">Recorded</span>
+            </div>
+            <p class="metric-desc text-secondary mb-0 small">Security engine signals</p>
+          </div>
+        </app-card-container>
+      </div>
+
+      <div class="col-6 col-xl-3">
+        <app-card-container [borderAccent]="false">
+          <div class="metric-card d-flex flex-column gap-1">
+            <span class="metric-label text-uppercase fw-semibold small text-muted">Open Alerts</span>
+            <div class="metric-value-row d-flex align-items-center justify-content-between my-1">
+              <span class="fs-4 fw-bold text-danger">{{ openAlertsCount }}</span>
+              <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Active</span>
+            </div>
+            <p class="metric-desc text-secondary mb-0 small">Awaiting analyst action</p>
+          </div>
+        </app-card-container>
+      </div>
+
+      <div class="col-6 col-xl-3">
+        <app-card-container [borderAccent]="false">
+          <div class="metric-card d-flex flex-column gap-1">
+            <span class="metric-label text-uppercase fw-semibold small text-muted">Under Investigation</span>
+            <div class="metric-value-row d-flex align-items-center justify-content-between my-1">
+              <span class="fs-4 fw-bold text-warning">{{ investigatingCount }}</span>
+              <span class="badge bg-warning-subtle text-warning border border-warning-subtle">Active Case</span>
+            </div>
+            <p class="metric-desc text-secondary mb-0 small">Assigned to fraud analysts</p>
+          </div>
+        </app-card-container>
+      </div>
+
+      <div class="col-6 col-xl-3">
+        <app-card-container [borderAccent]="false">
+          <div class="metric-card d-flex flex-column gap-1">
+            <span class="metric-label text-uppercase fw-semibold small text-muted">High Risk Scores</span>
+            <div class="metric-value-row d-flex align-items-center justify-content-between my-1">
+              <span class="fs-4 fw-bold text-danger">{{ highRiskCount }}</span>
+              <span class="badge bg-danger text-white">Score &ge; 75</span>
+            </div>
+            <p class="metric-desc text-secondary mb-0 small">Elevated risk transactions</p>
+          </div>
+        </app-card-container>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="d-flex align-items-center gap-2 mb-3">
+      <button
+        type="button"
+        class="btn btn-sm px-3"
+        [ngClass]="activeTab === 'alerts' ? 'btn-primary' : 'btn-outline-secondary'"
+        (click)="setTab('alerts')">
+        Live Fraud Alerts ({{ fraudAlerts.length }})
+      </button>
+
+      <button
+        type="button"
+        class="btn btn-sm px-3"
+        [ngClass]="activeTab === 'riskScores' ? 'btn-primary' : 'btn-outline-secondary'"
+        (click)="setTab('riskScores')">
+        Risk Scores Ledger ({{ riskScores.length }})
+      </button>
+    </div>
+
+    <!-- Tab 1: Fraud Alerts -->
+    <app-card-container *ngIf="activeTab === 'alerts'" title="Fraud Security Alerts" [subtitle]="'Showing ' + filteredAlerts.length + ' of ' + fraudAlerts.length + ' alerts'">
+      <!-- Filter Bar -->
+      <div class="row g-3 mb-4 pb-3 border-bottom align-items-end">
+        <div class="col-12 col-md-8">
+          <label class="form-label small text-muted mb-1" for="alertSearch">Search Alerts</label>
+          <input
+            id="alertSearch"
+            type="text"
+            class="form-control form-control-sm"
+            [(ngModel)]="searchQuery"
+            (ngModelChange)="onFilterChange()"
+            placeholder="Search by Alert ID, Transaction ID, or reason...">
+        </div>
+
+        <div class="col-12 col-md-4">
+          <label class="form-label small text-muted mb-1" for="alertStatusFilter">Alert Status</label>
+          <select id="alertStatusFilter" class="form-select form-select-sm" [(ngModel)]="selectedStatusFilter" (ngModelChange)="onFilterChange()">
+            <option value="ALL">All Statuses</option>
+            <option value="OPEN">Open Only</option>
+            <option value="INVESTIGATING">Investigating Only</option>
+            <option value="CONFIRMED">Confirmed Fraud</option>
+            <option value="FALSE_POSITIVE">False Positives</option>
+            <option value="CLOSED">Closed Only</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div *ngIf="filteredAlerts.length === 0" class="py-4">
+        <app-empty-state
+          title="No Fraud Alerts Found"
+          [message]="fraudAlerts.length === 0 ? 'No fraud alerts recorded in the database.' : 'No alerts match your filter criteria.'">
+        </app-empty-state>
+      </div>
+
+      <!-- Alerts Table -->
+      <div class="table-responsive" *ngIf="filteredAlerts.length > 0">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Alert ID</th>
+              <th>Transaction ID</th>
+              <th>Risk Score</th>
+              <th>Status</th>
+              <th>Trigger Reason</th>
+              <th>Raised At</th>
+              <th>Investigator</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let alert of filteredAlerts">
+              <td class="font-monospace fw-semibold small text-danger">{{ alert.fraudAlertId }}</td>
+              <td class="font-monospace small text-primary">{{ alert.transactionId }}</td>
+              <td class="font-monospace small text-muted">{{ alert.riskScoreId || '�' }}</td>
+              <td>
+                <span class="badge" [ngClass]="getAlertBadgeClass(alert.status)">
+                  {{ alert.status }}
+                </span>
+              </td>
+              <td class="small">{{ alert.reason || 'Anomalous velocity or geo-mismatch detected' }}</td>
+              <td class="small text-muted">{{ alert.raisedAt | date:'short' }}</td>
+              <td class="small text-muted">{{ alert.investigatorStaffId || 'Unassigned' }}</td>
+              <td class="text-end">
+                <div class="d-inline-flex gap-1" *ngIf="alert.status === 'OPEN' || alert.status === 'PENDING' || alert.status === 'INVESTIGATING'">
+                  <button
+                    *ngIf="alert.status === 'OPEN' || alert.status === 'PENDING'"
+                    type="button"
+                    class="btn btn-sm btn-outline-warning py-1 px-2"
+                    title="Mark Under Investigation"
+                    (click)="updateAlertStatus(alert, 'INVESTIGATING')">
+                    Investigate
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-danger py-1 px-2"
+                    title="Confirm Fraudulent Activity"
+                    (click)="updateAlertStatus(alert, 'CONFIRMED')">
+                    Confirm
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-secondary py-1 px-2"
+                    title="Mark as Legitimate / False Positive"
+                    (click)="updateAlertStatus(alert, 'FALSE_POSITIVE')">
+                    False +ve
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-success py-1 px-2"
+                    title="Close Investigation"
+                    (click)="updateAlertStatus(alert, 'CLOSED')">
+                    Close
+                  </button>
+                </div>
+                <div class="d-inline-flex align-items-center gap-1" *ngIf="alert.status !== 'OPEN' && alert.status !== 'PENDING' && alert.status !== 'INVESTIGATING'">
+                  <span class="badge" [ngClass]="getAlertBadgeClass(alert.status)">{{ alert.status }}</span>
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary btn-sm py-0 px-2 small"
+                    title="Reopen Investigation"
+                    (click)="updateAlertStatus(alert, 'INVESTIGATING')">
+                    Reopen
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </app-card-container>
+
+    <!-- Tab 2: Risk Scores -->
+    <app-card-container *ngIf="activeTab === 'riskScores'" title="Transaction Risk Evaluations" [subtitle]="'Showing ' + filteredScores.length + ' of ' + riskScores.length + ' risk scores'">
+      <!-- Filter Bar -->
+      <div class="row g-3 mb-4 pb-3 border-bottom align-items-end">
+        <div class="col-12 col-md-8">
+          <label class="form-label small text-muted mb-1" for="scoreSearch">Search Scores</label>
+          <input
+            id="scoreSearch"
+            type="text"
+            class="form-control form-control-sm"
+            [(ngModel)]="searchQuery"
+            (ngModelChange)="onFilterChange()"
+            placeholder="Search by Risk Score ID, Transaction ID, or risk factors...">
+        </div>
+
+        <div class="col-12 col-md-4">
+          <label class="form-label small text-muted mb-1" for="scoreFilter">Risk Level</label>
+          <select id="scoreFilter" class="form-select form-select-sm" [(ngModel)]="selectedStatusFilter" (ngModelChange)="onFilterChange()">
+            <option value="ALL">All Risk Levels</option>
+            <option value="HIGH">High Risk</option>
+            <option value="MEDIUM">Medium Risk</option>
+            <option value="LOW">Low Risk</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div *ngIf="filteredScores.length === 0" class="py-4">
+        <app-empty-state
+          title="No Risk Scores Found"
+          [message]="riskScores.length === 0 ? 'No transaction risk scores recorded in the database.' : 'No risk scores match your filter criteria.'">
+        </app-empty-state>
+      </div>
+
+      <!-- Scores Table -->
+      <div class="table-responsive" *ngIf="filteredScores.length > 0">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Risk Score ID</th>
+              <th>Transaction ID</th>
+              <th>Score (0-100)</th>
+              <th>Risk Level</th>
+              <th>Model Version</th>
+              <th>Risk Factors</th>
+              <th>Scored Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let s of filteredScores">
+              <td class="font-monospace fw-semibold small text-primary">{{ s.riskScoreId }}</td>
+              <td class="font-monospace small text-dark">{{ s.transactionId }}</td>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <strong class="fs-6">{{ s.score }}</strong>
+                  <div class="progress flex-grow-1" style="height: 6px; min-width: 60px;">
+                    <div
+                      class="progress-bar"
+                      [ngClass]="s.riskLevel === 'HIGH' ? 'bg-danger' : (s.riskLevel === 'MEDIUM' ? 'bg-warning' : 'bg-success')"
+                      [style.width.%]="s.score">
+                    </div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <span class="badge" [ngClass]="getRiskScoreBadgeClass(s.riskLevel)">
+                  {{ s.riskLevel }}
+                </span>
+              </td>
+              <td class="small font-monospace text-muted">{{ s.modelVersion || 'v2.1-prod' }}</td>
+              <td class="small">{{ s.riskFactors || 'Standard baseline evaluation' }}</td>
+              <td class="small text-muted">{{ s.scoredAt | date:'short' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </app-card-container>
+  </div>
 </div>

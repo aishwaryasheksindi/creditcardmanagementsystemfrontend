@@ -1,16 +1,332 @@
-﻿<div class="customer-feature">
+<div class="customer-feature container-fluid px-0">
   <app-page-header
-    title="Customer Portfolio"
-    subtitle="Customer account relationship management and profile verification."
-    badgeText="Directory">
+    title="Customer Directory & Portfolio"
+    subtitle="Inspect cardholder profiles, compliance KYC standings, credit profiles, and card holdings."
+    badgeText="Customer Relations">
+    <div header-actions>
+      <button type="button" class="btn btn-secondary btn-sm d-inline-flex align-items-center gap-2" (click)="loadCustomers()" [disabled]="isLoading">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+        </svg>
+        Refresh
+      </button>
+    </div>
   </app-page-header>
 
-  <app-card-container [borderAccent]="true" title="Customer Portfolio Overview">
-    <app-empty-state
-      title="Customer Portfolio Module Ready"
-      message="This foundation module is established and routing is operational. Integration with Spring Boot backend services will occur in subsequent phases."
-      actionLabel="View Dashboard"
-      (actionClicked)="false">
-    </app-empty-state>
-  </app-card-container>
+  <!-- Action Alert -->
+  <div *ngIf="actionMessage" class="alert alert-info alert-dismissible fade show my-3 rounded-3 shadow-sm" role="alert">
+    <span>{{ actionMessage }}</span>
+    <button type="button" class="btn-close" (click)="actionMessage = null" aria-label="Close"></button>
+  </div>
+
+  <!-- Loading State -->
+  <div class="my-4" *ngIf="isLoading">
+    <app-loading-spinner message="Loading customer portfolio..."></app-loading-spinner>
+  </div>
+
+  <!-- Error State -->
+  <div class="my-4" *ngIf="errorMessage && !isLoading">
+    <app-error-state
+      title="Unable to Load Customer Portfolio"
+      [message]="errorMessage"
+      (retry)="loadCustomers()">
+    </app-error-state>
+  </div>
+
+  <div *ngIf="!isLoading && !errorMessage">
+    <!-- 4 Summary Metrics -->
+    <div class="row g-3 g-md-4 mb-4">
+      <div class="col-6 col-xl-3">
+        <app-card-container [borderAccent]="true">
+          <div class="metric-card d-flex flex-column gap-1">
+            <span class="metric-label text-uppercase fw-semibold small text-muted">Total Customers</span>
+            <div class="metric-value-row d-flex align-items-center justify-content-between my-1">
+              <span class="fs-4 fw-bold text-dark">{{ totalCustomers }}</span>
+              <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Registered</span>
+            </div>
+            <p class="metric-desc text-secondary mb-0 small">Accounts in system</p>
+          </div>
+        </app-card-container>
+      </div>
+
+      <div class="col-6 col-xl-3">
+        <app-card-container [borderAccent]="false">
+          <div class="metric-card d-flex flex-column gap-1">
+            <span class="metric-label text-uppercase fw-semibold small text-muted">Verified KYC</span>
+            <div class="metric-value-row d-flex align-items-center justify-content-between my-1">
+              <span class="fs-4 fw-bold text-success">{{ verifiedCount }}</span>
+              <span class="badge bg-success-subtle text-success border border-success-subtle">Authorized</span>
+            </div>
+            <p class="metric-desc text-secondary mb-0 small">Ready for card issuance</p>
+          </div>
+        </app-card-container>
+      </div>
+
+      <div class="col-6 col-xl-3">
+        <app-card-container [borderAccent]="false">
+          <div class="metric-card d-flex flex-column gap-1">
+            <span class="metric-label text-uppercase fw-semibold small text-muted">Pending Review</span>
+            <div class="metric-value-row d-flex align-items-center justify-content-between my-1">
+              <span class="fs-4 fw-bold text-warning">{{ pendingCount }}</span>
+              <span class="badge bg-warning-subtle text-warning border border-warning-subtle">In Queue</span>
+            </div>
+            <p class="metric-desc text-secondary mb-0 small">Documents awaiting review</p>
+          </div>
+        </app-card-container>
+      </div>
+
+      <div class="col-6 col-xl-3">
+        <app-card-container [borderAccent]="false">
+          <div class="metric-card d-flex flex-column gap-1">
+            <span class="metric-label text-uppercase fw-semibold small text-muted">Active Accounts</span>
+            <div class="metric-value-row d-flex align-items-center justify-content-between my-1">
+              <span class="fs-4 fw-bold text-dark">{{ activeAccountsCount }}</span>
+              <span class="badge bg-info-subtle text-info border border-info-subtle">Active</span>
+            </div>
+            <p class="metric-desc text-secondary mb-0 small">Good standing profiles</p>
+          </div>
+        </app-card-container>
+      </div>
+    </div>
+
+    <!-- Customer Portfolio Table Container -->
+    <app-card-container title="Customer Directory" [subtitle]="'Showing ' + filteredCustomers.length + ' of ' + customers.length + ' profiles'">
+      <!-- Filter Bar -->
+      <div class="row g-3 mb-4 pb-3 border-bottom align-items-end">
+        <div class="col-12 col-md-6">
+          <label class="form-label small text-muted mb-1" for="customerSearch">Search Customers</label>
+          <input
+            id="customerSearch"
+            type="text"
+            class="form-control form-control-sm"
+            [(ngModel)]="searchQuery"
+            (ngModelChange)="onFilterChange()"
+            placeholder="Search by name, customer ID, branch, email, or phone...">
+        </div>
+
+        <div class="col-6 col-md-3">
+          <label class="form-label small text-muted mb-1" for="kycFilter">KYC Status</label>
+          <select id="kycFilter" class="form-select form-select-sm" [(ngModel)]="selectedKycStatus" (ngModelChange)="onFilterChange()">
+            <option value="ALL">All KYC Statuses</option>
+            <option value="VERIFIED">Verified</option>
+            <option value="PENDING">Pending</option>
+            <option value="REJECTED">Rejected</option>
+          </select>
+        </div>
+
+        <div class="col-6 col-md-3">
+          <label class="form-label small text-muted mb-1" for="customerBranchFilter">Branch Scope</label>
+          <select id="customerBranchFilter" class="form-select form-select-sm" [(ngModel)]="selectedBranchFilter" (ngModelChange)="onFilterChange()">
+            <option value="ALL">All Branches</option>
+            <option value="MY_BRANCH">My Branch ({{ officerBranch }})</option>
+            <option value="CN4200">Branch CN4200</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div *ngIf="filteredCustomers.length === 0" class="py-4">
+        <app-empty-state
+          title="No Customers Found"
+          [message]="customers.length === 0 ? 'No customer profiles exist in the database.' : 'No customer records match your filter criteria.'">
+        </app-empty-state>
+      </div>
+
+      <!-- Table -->
+      <div class="table-responsive" *ngIf="filteredCustomers.length > 0">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Customer ID</th>
+              <th>Full Name</th>
+              <th>Contact Details</th>
+              <th>Branch</th>
+              <th>KYC Status</th>
+              <th>Account Status</th>
+              <th>Cards</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let c of filteredCustomers">
+              <td class="font-monospace fw-semibold small text-primary">{{ c.customerId }}</td>
+              <td>
+                <span class="fw-bold text-dark">{{ c.name }}</span>
+                <div class="small text-muted" *ngIf="c.employment">{{ c.employment }}</div>
+              </td>
+              <td class="small">
+                <div>{{ c.email }}</div>
+                <span class="text-muted">{{ c.phoneNumber }}</span>
+              </td>
+              <td>
+                <span class="badge bg-light text-dark border">{{ c.branchCode || 'CN8080' }}</span>
+              </td>
+              <td>
+                <span class="badge" [ngClass]="getKycBadgeClass(c.kycStatus)">
+                  {{ c.kycStatus }}
+                </span>
+              </td>
+              <td>
+                <span class="badge" [ngClass]="c.customerStatus === 'ACTIVE' ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-secondary-subtle text-secondary border'">
+                  {{ c.customerStatus }}
+                </span>
+              </td>
+              <td>
+                <span class="badge bg-secondary-subtle text-dark border">
+                  {{ (customerCardsMap.get(c.customerId) || []).length }} Cards
+                </span>
+              </td>
+              <td class="text-end">
+                <button type="button" class="btn btn-outline-primary btn-sm py-1 px-2 d-inline-flex align-items-center gap-1" (click)="openDetails(c)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                  Profile &amp; KYC
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </app-card-container>
+  </div>
 </div>
+
+<!-- Customer Profile & KYC Details Modal -->
+<ng-template #customerDetailsModal let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title fw-bold">Customer Account Details: {{ selectedCustomer?.name }}</h5>
+    <button type="button" class="btn-close" (click)="closeModal()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body p-4" *ngIf="selectedCustomer">
+    <!-- Customer Info Grid -->
+    <div class="row g-3 mb-4">
+      <div class="col-sm-6 col-md-4">
+        <span class="text-muted small d-block">Customer ID</span>
+        <span class="font-monospace fw-bold">{{ selectedCustomer.customerId }}</span>
+      </div>
+      <div class="col-sm-6 col-md-4">
+        <span class="text-muted small d-block">User ID</span>
+        <span class="font-monospace">{{ selectedCustomer.userId }}</span>
+      </div>
+      <div class="col-sm-6 col-md-4">
+        <span class="text-muted small d-block">KYC Status</span>
+        <span class="badge" [ngClass]="getKycBadgeClass(selectedCustomer.kycStatus)">{{ selectedCustomer.kycStatus }}</span>
+      </div>
+      <div class="col-sm-6 col-md-4">
+        <span class="text-muted small d-block">Email</span>
+        <span>{{ selectedCustomer.email }}</span>
+      </div>
+      <div class="col-sm-6 col-md-4">
+        <span class="text-muted small d-block">Phone Number</span>
+        <span>{{ selectedCustomer.phoneNumber }}</span>
+      </div>
+      <div class="col-sm-6 col-md-4">
+        <span class="text-muted small d-block">Date of Birth</span>
+        <span>{{ selectedCustomer.dateOfBirth | date:'mediumDate' }}</span>
+      </div>
+      <div class="col-sm-6 col-md-4">
+        <span class="text-muted small d-block">Employment</span>
+        <span>{{ selectedCustomer.employment || 'N/A' }}</span>
+      </div>
+      <div class="col-sm-6 col-md-4">
+        <span class="text-muted small d-block">Income Band</span>
+        <span>{{ selectedCustomer.incomeRange || 'N/A' }}</span>
+      </div>
+      <div class="col-sm-6 col-md-4">
+        <span class="text-muted small d-block">Address</span>
+        <span class="small">{{ selectedCustomer.address || 'N/A' }}</span>
+      </div>
+    </div>
+
+    <!-- KYC Documents Section -->
+    <div class="card border rounded-3 mb-4">
+      <div class="card-header bg-light py-2 px-3 fw-bold small text-uppercase">
+        KYC Compliance Documents ({{ selectedCustomerDocs.length }})
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive" *ngIf="selectedCustomerDocs.length > 0">
+          <table class="table align-middle mb-0 small">
+            <thead class="table-light">
+              <tr>
+                <th>Doc ID</th>
+                <th>Type</th>
+                <th>Doc Number</th>
+                <th>Status</th>
+                <th>Submitted</th>
+                <th class="text-end">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let doc of selectedCustomerDocs">
+                <td class="font-monospace">{{ doc.kycDocumentId }}</td>
+                <td>{{ doc.documentType }}</td>
+                <td class="font-monospace fw-semibold">{{ doc.documentNumber }}</td>
+                <td>
+                  <span class="badge" [ngClass]="getKycBadgeClass(doc.status)">{{ doc.status }}</span>
+                </td>
+                <td>{{ doc.submittedAt | date:'shortDate' }}</td>
+                <td class="text-end">
+                  <button
+                    *ngIf="doc.status === 'PENDING'"
+                    type="button"
+                    class="btn btn-sm btn-success py-0 px-2"
+                    (click)="verifyKyc(doc.kycDocumentId)">
+                    Verify Now
+                  </button>
+                  <span *ngIf="doc.status !== 'PENDING'" class="text-muted small">Reviewed</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div *ngIf="selectedCustomerDocs.length === 0" class="p-3 text-center text-muted small">
+          No KYC documents submitted yet for this customer.
+        </div>
+      </div>
+    </div>
+
+    <!-- Linked Cards Section -->
+    <div class="card border rounded-3">
+      <div class="card-header bg-light py-2 px-3 fw-bold small text-uppercase">
+        Assigned Credit Cards ({{ selectedCustomerCards.length }})
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive" *ngIf="selectedCustomerCards.length > 0">
+          <table class="table align-middle mb-0 small">
+            <thead class="table-light">
+              <tr>
+                <th>Card Reference</th>
+                <th>Type</th>
+                <th>Credit Limit</th>
+                <th>Available</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let card of selectedCustomerCards">
+                <td class="font-monospace fw-semibold">{{ card.cardReference | maskCard }}</td>
+                <td>{{ card.cardTypeId }}</td>
+                <td>{{ card.creditLimit | currency:'INR':'symbol':'1.0-0' }}</td>
+                <td>{{ card.availableLimit | currency:'INR':'symbol':'1.0-0' }}</td>
+                <td>
+                  <span class="badge" [ngClass]="card.cardStatus === 'ACTIVE' ? 'bg-success' : (card.cardStatus === 'BLOCKED' ? 'bg-danger' : 'bg-warning text-dark')">
+                    {{ card.cardStatus }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div *ngIf="selectedCustomerCards.length === 0" class="p-3 text-center text-muted small">
+          No credit cards currently issued to this cardholder.
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary btn-sm" (click)="closeModal()">Close</button>
+  </div>
+</ng-template>

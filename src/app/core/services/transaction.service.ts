@@ -13,6 +13,10 @@ export class TransactionService {
 
   constructor(private http: HttpClient) {}
 
+  public getAllTransactions(): Observable<Transaction[]> {
+    return this.http.get<Transaction[]>(`${this.baseUrl}/transactions`);
+  }
+
   public getTransactionsByCard(cardId: string): Observable<Transaction[]> {
     return this.http.get<Transaction[]>(`${this.baseUrl}/transactions/card/${cardId}`);
   }

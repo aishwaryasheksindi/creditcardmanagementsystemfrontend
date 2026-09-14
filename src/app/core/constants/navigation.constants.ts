@@ -9,25 +9,32 @@ export const NAVIGATION_ITEMS: NavItem[] = [
     roles: ['ADMIN', 'BANK_OFFICER', 'CUSTOMER_SERVICE_AGENT', 'FRAUD_ANALYST', 'CUSTOMER']
   },
   {
+    id: 'kyc',
+    label: 'KYC & Verification',
+    route: '/app/kyc',
+    icon: 'shield-check',
+    roles: ['ADMIN', 'BANK_OFFICER', 'CUSTOMER']
+  },
+  {
     id: 'cards',
     label: 'Cards',
     route: '/app/cards',
     icon: 'credit-card',
-    roles: ['ADMIN', 'BANK_OFFICER', 'CUSTOMER']
+    roles: ['ADMIN', 'BANK_OFFICER', 'FRAUD_ANALYST', 'CUSTOMER']
   },
   {
     id: 'customer',
     label: 'Customer',
     route: '/app/customer',
     icon: 'user',
-    roles: ['ADMIN', 'BANK_OFFICER', 'CUSTOMER_SERVICE_AGENT']
+    roles: ['ADMIN', 'BANK_OFFICER', 'FRAUD_ANALYST', 'CUSTOMER_SERVICE_AGENT']
   },
   {
     id: 'transactions',
     label: 'Transactions',
     route: '/app/transactions',
     icon: 'receipt',
-    roles: ['ADMIN', 'BANK_OFFICER', 'CUSTOMER']
+    roles: ['ADMIN', 'BANK_OFFICER', 'FRAUD_ANALYST', 'CUSTOMER']
   },
   {
     id: 'payments',

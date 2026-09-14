@@ -1,7 +1,7 @@
-<div class="cards-feature container-fluid px-0">
+﻿<div class="cards-feature container-fluid px-0">
   <app-page-header
-    title="My Cards"
-    subtitle="View and manage your credit cards, available limits, and status controls."
+    [title]="isCustomer ? 'My Cards' : 'Credit Cards Portfolio'"
+    [subtitle]="isCustomer ? 'View and manage your credit cards, available limits, and status controls.' : 'Platform-wide credit card lifecycle management, limits, activation states, and security containment.'"
     badgeText="Credit Cards">
     <div header-actions>
       <button type="button" class="btn btn-secondary btn-sm d-inline-flex align-items-center gap-2" (click)="loadCards(true)" [disabled]="isLoading">
@@ -16,7 +16,7 @@
 
   <!-- Loading State -->
   <div class="my-4" *ngIf="isLoading">
-    <app-loading-spinner message="Loading your credit cards..."></app-loading-spinner>
+    <app-loading-spinner message="Loading credit cards..."></app-loading-spinner>
   </div>
 
   <!-- Error State -->
@@ -28,17 +28,47 @@
     </app-error-state>
   </div>
 
-  <!-- Cards List Content -->
-  <div *ngIf="!isLoading && !errorMessage">
-    <!-- Empty State -->
+  <!-- Application Success Alert -->
+  <div *ngIf="applicationMessage" class="alert alert-success alert-dismissible fade show my-3 rounded-3 shadow-sm" role="alert">
+    <div class="d-flex align-items-center gap-2">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="20 6 9 17 4 12"></polyline>
+      </svg>
+      <span>{{ applicationMessage }}</span>
+    </div>
+    <button type="button" class="btn-close" (click)="applicationMessage = null" aria-label="Close"></button>
+  </div>
+
+  <!-- CUSTOMER VIEW (Preserved 100%) -->
+  <div *ngIf="!isLoading && !errorMessage && isCustomer">
+    <!-- Empty State / Card Products Offer -->
     <div *ngIf="cards.length === 0" class="my-4">
-      <app-card-container [borderAccent]="true">
-        <app-empty-state
-          title="No Cards"
-          message="No cards are currently associated with your account."
-          actionLabel="Go to Dashboard"
-          (actionClicked)="goToDashboard()">
-        </app-empty-state>
+      <app-card-container [borderAccent]="true" title="No Active Cards Found" subtitle="Explore eligible credit card tiers available for your verified account">
+        <div class="row g-4 mt-1">
+          <div class="col-12 col-md-6 col-xl-3" *ngFor="let ct of cardTypes">
+            <div class="card h-100 border rounded-4 shadow-sm p-3 d-flex flex-column justify-content-between">
+              <div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace">{{ ct.cardTypeId }}</span>
+                  <span class="badge bg-light text-dark border">{{ ct.typeName }}</span>
+                </div>
+                <h5 class="fw-bold mb-1">{{ ct.typeName }} Card</h5>
+                <div class="fs-4 fw-bold text-success mb-2">
+                  ?{{ ct.creditLimit | number:'1.0-0' }}
+                </div>
+                <ul class="list-unstyled small text-secondary mb-3">
+                  <li class="mb-1"><strong>Annual Fee:</strong> ?{{ ct.annualFee | number:'1.0-0' }}</li>
+                  <li class="mb-1"><strong>Reward Categories:</strong> {{ ct.rewardCategories }}</li>
+                  <li class="mb-1"><strong>Interest Rate:</strong> {{ ct.interestRate }}% p.m.</li>
+                  <li><strong>EMI Eligible:</strong> {{ ct.emiEligible ? 'Yes' : 'No' }}</li>
+                </ul>
+              </div>
+              <button type="button" class="btn btn-outline-primary btn-sm w-100 mt-2" (click)="applyForCard(ct)">
+                Request {{ ct.typeName }}
+              </button>
+            </div>
+          </div>
+        </div>
       </app-card-container>
     </div>
 
@@ -61,7 +91,7 @@
             <!-- Chip visual -->
             <div class="sim-chip mb-3"></div>
 
-            <!-- Card Reference Token (No fake 16-digit card number) -->
+            <!-- Card Reference Token -->
             <div class="card-ref-display mb-3">
               <span class="text-muted small d-block mb-1">Card Reference Token</span>
               <div class="card-token font-monospace fs-5 fw-bold">{{ card.cardReference | maskCard }}</div>
@@ -97,7 +127,7 @@
             </button>
 
             <button type="button" class="btn btn-outline-primary btn-sm w-100 d-flex align-items-center justify-content-center gap-2" (click)="viewCardDetails(card.cardId); $event.stopPropagation()">
-              View Details & Controls
+              View Details &amp; Controls
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="9 18 15 12 9 6"></polyline>
               </svg>
@@ -106,5 +136,152 @@
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- STAFF / ADMIN VIEW -->
+  <div *ngIf="!isLoading && !errorMessage && !isCustomer">
+    <!-- 4 Portfolio Metrics -->
+    <div class="row g-3 g-md-4 mb-4">
+      <div class="col-6 col-xl-3">
+        <app-card-container [borderAccent]="true">
+          <div class="metric-card d-flex flex-column gap-1">
+            <span class="metric-label text-uppercase fw-semibold small text-muted">Total Cards</span>
+            <div class="metric-value-row d-flex align-items-center justify-content-between my-1">
+              <span class="fs-4 fw-bold text-dark">{{ totalCardsCount }}</span>
+              <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Portfolio</span>
+            </div>
+            <p class="metric-desc text-secondary mb-0 small">Total issued credit lines</p>
+          </div>
+        </app-card-container>
+      </div>
+
+      <div class="col-6 col-xl-3">
+        <app-card-container [borderAccent]="false">
+          <div class="metric-card d-flex flex-column gap-1">
+            <span class="metric-label text-uppercase fw-semibold small text-muted">Active Cards</span>
+            <div class="metric-value-row d-flex align-items-center justify-content-between my-1">
+              <span class="fs-4 fw-bold text-success">{{ activeCardsCount }}</span>
+              <span class="badge bg-success-subtle text-success border border-success-subtle">Operational</span>
+            </div>
+            <p class="metric-desc text-secondary mb-0 small">Active transacting cards</p>
+          </div>
+        </app-card-container>
+      </div>
+
+      <div class="col-6 col-xl-3">
+        <app-card-container [borderAccent]="false">
+          <div class="metric-card d-flex flex-column gap-1">
+            <span class="metric-label text-uppercase fw-semibold small text-muted">Inactive / Pending</span>
+            <div class="metric-value-row d-flex align-items-center justify-content-between my-1">
+              <span class="fs-4 fw-bold text-warning">{{ inactiveCardsCount }}</span>
+              <span class="badge bg-warning-subtle text-warning border border-warning-subtle">Pending OTP</span>
+            </div>
+            <p class="metric-desc text-secondary mb-0 small">Awaiting activation</p>
+          </div>
+        </app-card-container>
+      </div>
+
+      <div class="col-6 col-xl-3">
+        <app-card-container [borderAccent]="false">
+          <div class="metric-card d-flex flex-column gap-1">
+            <span class="metric-label text-uppercase fw-semibold small text-muted">Blocked / Containment</span>
+            <div class="metric-value-row d-flex align-items-center justify-content-between my-1">
+              <span class="fs-4 fw-bold text-danger">{{ blockedCardsCount }}</span>
+              <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Suspended</span>
+            </div>
+            <p class="metric-desc text-secondary mb-0 small">Security contained</p>
+          </div>
+        </app-card-container>
+      </div>
+    </div>
+
+    <!-- Cards Portfolio Table Container -->
+    <app-card-container title="Credit Cards Inventory" [subtitle]="'Showing ' + filteredCards.length + ' of ' + cards.length + ' accounts'">
+      <!-- Filter Bar -->
+      <div class="row g-3 mb-4 pb-3 border-bottom align-items-end">
+        <div class="col-12 col-md-8">
+          <label class="form-label small text-muted mb-1" for="cardSearch">Search Portfolio</label>
+          <input
+            id="cardSearch"
+            type="text"
+            class="form-control form-control-sm"
+            [(ngModel)]="searchQuery"
+            (ngModelChange)="onFilterChange()"
+            placeholder="Search by card reference, customer name, card ID, or tier...">
+        </div>
+
+        <div class="col-12 col-md-4">
+          <label class="form-label small text-muted mb-1" for="cardStatusFilter">Lifecycle Status</label>
+          <select id="cardStatusFilter" class="form-select form-select-sm" [(ngModel)]="selectedStatusFilter" (ngModelChange)="onFilterChange()">
+            <option value="ALL">All Statuses</option>
+            <option value="ACTIVE">Active</option>
+            <option value="INACTIVE">Inactive</option>
+            <option value="BLOCKED">Blocked</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div *ngIf="filteredCards.length === 0" class="py-4">
+        <app-empty-state
+          title="No Credit Cards Found"
+          [message]="cards.length === 0 ? 'No credit cards have been issued in the database.' : 'No card records match your filter criteria.'">
+        </app-empty-state>
+      </div>
+
+      <!-- Table -->
+      <div class="table-responsive" *ngIf="filteredCards.length > 0">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Card Reference</th>
+              <th>Cardholder</th>
+              <th>Tier</th>
+              <th>Credit Limit</th>
+              <th>Available Limit</th>
+              <th>Status</th>
+              <th>Billing Cycle</th>
+              <th>Expiry</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let card of filteredCards">
+              <td class="font-monospace fw-bold small text-dark">
+                {{ card.cardReference | maskCard }}
+              </td>
+              <td>
+                <span class="fw-bold text-dark">{{ getCustomerName(card.customerId) }}</span>
+                <div class="font-monospace small text-muted">{{ card.customerId }}</div>
+              </td>
+              <td>
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle">{{ card.cardTypeId }}</span>
+              </td>
+              <td class="fw-bold text-dark">
+                {{ card.creditLimit | currency:'INR':'symbol':'1.0-0' }}
+              </td>
+              <td class="text-success fw-semibold">
+                {{ card.availableLimit | currency:'INR':'symbol':'1.0-0' }}
+              </td>
+              <td>
+                <span class="badge" [ngClass]="getCardStatusBadge(card.cardStatus)">
+                  {{ card.cardStatus }}
+                </span>
+              </td>
+              <td class="small text-muted">Day {{ card.billingCycle }}</td>
+              <td class="font-monospace small text-muted">{{ card.expiryDate | date:'MM/yy' }}</td>
+              <td class="text-end">
+                <button type="button" class="btn btn-outline-primary btn-sm py-1 px-2 d-inline-flex align-items-center gap-1" (click)="viewCardDetails(card.cardId)">
+                  <span>Controls</span>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                  </svg>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </app-card-container>
   </div>
 </div>

@@ -1,16 +1,266 @@
-﻿<div class="ai-feature">
+﻿<div class="ai-feature container-fluid px-0">
   <app-page-header
-    title="AI Insights & Analytics"
-    subtitle="Machine learning credit scoring, spending behavior patterns, and fraud models."
+    title="AI Insights &amp; Analytics Engine"
+    subtitle="Behavioral anomaly detection, transaction risk classification models, and conversational intelligence."
     badgeText="AI Engine">
   </app-page-header>
 
-  <app-card-container [borderAccent]="true" title="AI Insights & Analytics Overview">
-    <app-empty-state
-      title="AI Insights & Analytics Module Ready"
-      message="This foundation module is established and routing is operational. Integration with Spring Boot backend services will occur in subsequent phases."
-      actionLabel="View Dashboard"
-      (actionClicked)="false">
-    </app-empty-state>
-  </app-card-container>
+  <!-- Navigation Tabs -->
+  <div class="d-flex align-items-center gap-2 mb-4 overflow-auto">
+    <button
+      type="button"
+      class="btn btn-sm px-3"
+      [ngClass]="activeTab === 'anomalies' ? 'btn-primary' : 'btn-outline-secondary'"
+      (click)="activeTab = 'anomalies'">
+      Behavioral Anomaly Detection
+    </button>
+
+    <button
+      type="button"
+      class="btn btn-sm px-3"
+      [ngClass]="activeTab === 'fraudRisk' ? 'btn-primary' : 'btn-outline-secondary'"
+      (click)="activeTab = 'fraudRisk'">
+      Transaction Risk Classifier
+    </button>
+
+    <button
+      type="button"
+      class="btn btn-sm px-3"
+      [ngClass]="activeTab === 'assistant' ? 'btn-primary' : 'btn-outline-secondary'"
+      (click)="activeTab = 'assistant'">
+      Operations AI Assistant
+    </button>
+  </div>
+
+  <!-- TAB 1: Behavioral Anomaly Detection -->
+  <div *ngIf="activeTab === 'anomalies'">
+    <app-card-container title="Account Anomaly Detection" subtitle="Scan cardholder transaction history for velocity spikes, abnormal locations, and unexpected volume surges">
+      <!-- Selector Row -->
+      <div class="row g-3 align-items-end mb-4 pb-3 border-bottom">
+        <div class="col-12 col-md-8">
+          <label class="form-label small text-muted mb-1" for="customerAnomalySelect">Target Customer Profile</label>
+          <select id="customerAnomalySelect" class="form-select" [(ngModel)]="selectedCustomerId">
+            <option value="" disabled>-- Select Customer --</option>
+            <option *ngFor="let c of customers" [value]="c.customerId">
+              {{ c.name }} ({{ c.customerId }}) - KYC: {{ c.kycStatus }}
+            </option>
+          </select>
+        </div>
+        <div class="col-12 col-md-4">
+          <button
+            type="button"
+            class="btn btn-primary w-100 d-inline-flex align-items-center justify-content-center gap-2"
+            (click)="runAnomalyDetection()"
+            [disabled]="isLoadingAnomalies || !selectedCustomerId">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+            </svg>
+            {{ isLoadingAnomalies ? 'Analyzing Transactions...' : 'Run Anomaly Scan' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div class="my-4" *ngIf="isLoadingAnomalies">
+        <app-loading-spinner message="Executing anomaly classification models against cardholder history..."></app-loading-spinner>
+      </div>
+
+      <!-- Error State -->
+      <div class="my-4" *ngIf="anomalyErrorMessage && !isLoadingAnomalies">
+        <app-error-state title="Analysis Failed" [message]="anomalyErrorMessage" (retry)="runAnomalyDetection()"></app-error-state>
+      </div>
+
+      <!-- Results Display -->
+      <div *ngIf="anomalyResult && !isLoadingAnomalies">
+        <div class="d-flex align-items-center justify-content-between p-3 rounded bg-light border mb-3">
+          <div>
+            <span class="text-muted small d-block">Target Account</span>
+            <span class="font-monospace fw-bold">{{ anomalyResult.customerId }}</span>
+          </div>
+          <div class="text-end">
+            <span class="text-muted small d-block">Generated At</span>
+            <span class="small">{{ anomalyResult.generatedAt | date:'medium' }}</span>
+          </div>
+        </div>
+
+        <!-- Anomaly Flags Table -->
+        <div *ngIf="anomalyResult.flags.length > 0" class="table-responsive">
+          <table class="table align-middle table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Anomaly Type</th>
+                <th>Severity</th>
+                <th>Description</th>
+                <th>Related Txn</th>
+                <th>Detected At</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let flag of anomalyResult.flags">
+                <td>
+                  <span class="badge bg-warning-subtle text-dark border">{{ flag.type }}</span>
+                </td>
+                <td>
+                  <span class="badge" [ngClass]="getSeverityBadge(flag.severity)">{{ flag.severity }}</span>
+                </td>
+                <td class="small">{{ flag.description }}</td>
+                <td class="font-monospace small text-primary">{{ flag.relatedTransactionId || '—' }}</td>
+                <td class="small text-muted">{{ flag.detectedAt | date:'short' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Clean Baseline State -->
+        <div *ngIf="(!anomalyResult.flags || anomalyResult.flags.length === 0)" class="py-4 text-center">
+          <div class="d-inline-flex p-3 rounded-circle bg-success-subtle text-success mb-2">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+          </div>
+          <h6 class="fw-bold text-success mb-1">No Anomalies Detected</h6>
+          <p class="text-muted small mb-0">Transaction cadence conforms to standard behavioral baseline.</p>
+        </div>
+      </div>
+    </app-card-container>
+  </div>
+
+  <!-- TAB 2: Transaction Fraud Risk Classifier -->
+  <div *ngIf="activeTab === 'fraudRisk'">
+    <app-card-container title="Transaction Risk Classification" subtitle="Deep inference on transaction characteristics, velocity, merchant reputation, and fraud signals">
+      <!-- Selector Row -->
+      <div class="row g-3 align-items-end mb-4 pb-3 border-bottom">
+        <div class="col-12 col-md-8">
+          <label class="form-label small text-muted mb-1" for="txRiskSelect">Target Transaction</label>
+          <select id="txRiskSelect" class="form-select" [(ngModel)]="selectedTransactionId">
+            <option value="" disabled>-- Select Transaction --</option>
+            <option *ngFor="let t of transactions" [value]="t.transactionId">
+              {{ t.transactionId }} - {{ t.amount | currency:'INR':'symbol':'1.0-0' }} ({{ t.transactionType }} - {{ t.transactionStatus }})
+            </option>
+          </select>
+        </div>
+        <div class="col-12 col-md-4">
+          <button
+            type="button"
+            class="btn btn-primary w-100 d-inline-flex align-items-center justify-content-center gap-2"
+            (click)="runFraudRiskEvaluation()"
+            [disabled]="isLoadingFraudRisk || !selectedTransactionId">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            </svg>
+            {{ isLoadingFraudRisk ? 'Evaluating Risk...' : 'Evaluate Risk Score' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div class="my-4" *ngIf="isLoadingFraudRisk">
+        <app-loading-spinner message="Evaluating transaction against neural risk models..."></app-loading-spinner>
+      </div>
+
+      <!-- Error State -->
+      <div class="my-4" *ngIf="fraudRiskErrorMessage && !isLoadingFraudRisk">
+        <app-error-state title="Evaluation Error" [message]="fraudRiskErrorMessage" (retry)="runFraudRiskEvaluation()"></app-error-state>
+      </div>
+
+      <!-- Results Display -->
+      <div *ngIf="fraudRiskResult && !isLoadingFraudRisk" class="row g-4">
+        <!-- Score Card -->
+        <div class="col-12 col-md-4">
+          <div class="card border rounded-4 p-4 text-center h-100 d-flex flex-column justify-content-center align-items-center bg-light">
+            <span class="text-muted small fw-semibold text-uppercase mb-2">Calculated Risk Score</span>
+            <div class="display-4 fw-bold mb-2" [ngClass]="fraudRiskResult.riskScore >= 70 ? 'text-danger' : (fraudRiskResult.riskScore >= 40 ? 'text-warning' : 'text-success')">
+              {{ fraudRiskResult.riskScore }}
+            </div>
+            <span class="badge px-3 py-2 fs-6 mb-2" [ngClass]="getRiskCategoryBadge(fraudRiskResult.riskCategory)">
+              {{ fraudRiskResult.riskCategory }} RISK
+            </span>
+            <span class="text-muted small">Score range 0 (Lowest) to 100 (Critical)</span>
+          </div>
+        </div>
+
+        <!-- Details Card -->
+        <div class="col-12 col-md-8">
+          <div class="card border rounded-4 p-4 h-100">
+            <h6 class="fw-bold mb-3">Model Analysis &amp; Recommendation</h6>
+            <div class="p-3 rounded bg-info-subtle border border-info-subtle mb-3">
+              <strong class="text-dark d-block mb-1">AI Recommendation:</strong>
+              <p class="mb-0 small text-dark">{{ fraudRiskResult.recommendation }}</p>
+            </div>
+
+            <span class="text-muted small fw-semibold d-block mb-2 text-uppercase">Identified Risk Factors:</span>
+            <ul class="list-group list-group-flush small" *ngIf="fraudRiskResult.riskFactors && fraudRiskResult.riskFactors.length > 0">
+              <li class="list-group-item px-0 py-1" *ngFor="let factor of fraudRiskResult.riskFactors">
+                &bull; {{ factor }}
+              </li>
+            </ul>
+            <div *ngIf="!fraudRiskResult.riskFactors || fraudRiskResult.riskFactors.length === 0" class="text-muted small">
+              No elevated risk signals observed.
+            </div>
+
+            <div class="mt-auto pt-3 border-top small text-muted d-flex justify-content-between">
+              <span>Transaction ID: <strong class="font-monospace text-dark">{{ fraudRiskResult.transactionId }}</strong></span>
+              <span>Evaluated: {{ fraudRiskResult.evaluatedAt | date:'short' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </app-card-container>
+  </div>
+
+  <!-- TAB 3: Operations AI Assistant -->
+  <div *ngIf="activeTab === 'assistant'">
+    <app-card-container title="CardNest Conversational Operations Copilot" subtitle="Intelligent assistant powered by backend Spring Boot NLP service">
+      <div class="card border rounded-3 overflow-hidden d-flex flex-column" style="height: 520px;">
+        <!-- Chat History -->
+        <div class="flex-grow-1 p-3 overflow-auto d-flex flex-column gap-3 bg-light">
+          <div
+            *ngFor="let msg of chatMessages"
+            class="d-flex"
+            [ngClass]="msg.sender === 'user' ? 'justify-content-end' : 'justify-content-start'">
+            <div
+              class="p-3 rounded-4 shadow-sm"
+              style="max-width: 75%;"
+              [ngClass]="msg.sender === 'user' ? 'bg-primary text-white rounded-bottom-end-0' : 'bg-white text-dark border rounded-bottom-start-0'">
+              <div class="d-flex align-items-center justify-content-between mb-1 gap-3">
+                <strong class="small">{{ msg.sender === 'user' ? 'You' : 'CardNest AI' }}</strong>
+                <span class="small opacity-75">{{ msg.timestamp }}</span>
+              </div>
+              <div class="small" style="white-space: pre-wrap;">{{ msg.text }}</div>
+            </div>
+          </div>
+
+          <div *ngIf="isChatSending" class="d-flex justify-content-start">
+            <div class="p-3 rounded-4 bg-white text-dark border shadow-sm small d-flex align-items-center gap-2">
+              <span class="spinner-grow spinner-grow-sm text-primary" role="status"></span>
+              <span>CardNest AI is reasoning...</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chat Input Bar -->
+        <div class="p-3 border-top bg-white d-flex gap-2">
+          <input
+            type="text"
+            class="form-control"
+            [(ngModel)]="userChatMessage"
+            (keyup.enter)="sendChatMessage()"
+            [disabled]="isChatSending"
+            placeholder="Type a query, e.g. 'Summarize fraud alert patterns' or 'What is KYC policy?'">
+          <button
+            type="button"
+            class="btn btn-primary px-4 d-inline-flex align-items-center gap-2"
+            (click)="sendChatMessage()"
+            [disabled]="!userChatMessage.trim() || isChatSending">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+            Send
+          </button>
+        </div>
+      </div>
+    </app-card-container>
+  </div>
 </div>

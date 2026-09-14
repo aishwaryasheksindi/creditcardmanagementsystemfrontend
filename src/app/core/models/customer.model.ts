@@ -26,3 +26,16 @@ export interface CustomerRegistrationRequest {
   incomeRange: string;
   branchCode: string;
 }
+
+export interface KycDocument {
+  kycDocumentId: string;
+  customerId: string;
+  documentType: string;
+  documentNumber: string;
+  documentUrl?: string;
+  status: 'PENDING' | 'VERIFIED' | 'REJECTED';
+  submittedAt: string;
+  verifiedByStaffId?: string;
+  verifiedAt?: string;
+  rejectionReason?: string | null;
+}

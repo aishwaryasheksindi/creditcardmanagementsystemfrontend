@@ -1,6 +1,6 @@
 import { Component, OnInit, NgZone, ChangeDetectorRef } from '@angular/core';
 import { Router } from '@angular/router';
-import { of } from 'rxjs';
+import { of, forkJoin } from 'rxjs';
 import { switchMap, catchError, finalize } from 'rxjs/operators';
 import { AuthService } from '../../core/services/auth.service';
 import { CustomerService } from '../../core/services/customer.service';
@@ -90,7 +90,32 @@ export class TransactionsComponent implements OnInit {
         }
       });
     } else {
-      this.isLoading = false;
+      forkJoin({
+        cards: this.cardService.getAllCards().pipe(catchError(() => of([]))),
+        transactions: this.transactionService.getAllTransactions().pipe(catchError(() => of([])))
+      }).pipe(
+        finalize(() => {
+          this.ngZone.run(() => {
+            this.isLoading = false;
+            this.cdr.markForCheck();
+          });
+        })
+      ).subscribe({
+        next: ({ cards, transactions }) => {
+          this.ngZone.run(() => {
+            this.cards = cards || [];
+            this.allTransactions = transactions || [];
+            this.applyFilters();
+            this.cdr.markForCheck();
+          });
+        },
+        error: () => {
+          this.ngZone.run(() => {
+            this.errorMessage = 'Failed to load transaction ledger. Please try again.';
+            this.cdr.markForCheck();
+          });
+        }
+      });
     }
   }
 

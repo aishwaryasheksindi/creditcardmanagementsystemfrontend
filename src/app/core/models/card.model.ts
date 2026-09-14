@@ -30,3 +30,20 @@ export interface CardActivationOtpResponse {
 export interface CardActivationRequest {
   otp: string;
 }
+
+export interface CardActionReason {
+  reason: string;
+}
+
+export interface CardIssueRequest {
+  customerId: string;
+  cardTypeId: string;
+  cardStatus: CardStatus;
+  creditLimit: number;
+  availableLimit: number;
+  billingCycle: number;
+  interestRate: number;
+  annualFee: number;
+  expiryDate: string;
+  issuanceDate: string;
+}

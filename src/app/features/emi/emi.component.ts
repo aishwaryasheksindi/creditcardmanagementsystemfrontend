@@ -111,7 +111,35 @@ export class EmiComponent implements OnInit {
         }
       });
     } else {
-      this.isLoading = false;
+      forkJoin({
+        allPlans: this.emiService.getAllEmiPlans().pipe(catchError(() => of([]))),
+        cards: this.cardService.getAllCards().pipe(catchError(() => of([]))),
+        transactions: this.transactionService.getAllTransactions().pipe(catchError(() => of([])))
+      }).pipe(
+        finalize(() => {
+          this.ngZone.run(() => {
+            this.isLoading = false;
+            this.cdr.markForCheck();
+          });
+        })
+      ).subscribe({
+        next: ({ allPlans, cards, transactions }) => {
+          this.ngZone.run(() => {
+            this.emiPlans = allPlans || [];
+            this.cards = cards || [];
+            this.transactions = transactions || [];
+            this.computeMetrics();
+            this.filterEligibleTransactions();
+            this.cdr.markForCheck();
+          });
+        },
+        error: () => {
+          this.ngZone.run(() => {
+            this.errorMessage = 'Failed to load EMI portfolio. Please try again.';
+            this.cdr.markForCheck();
+          });
+        }
+      });
     }
   }
 

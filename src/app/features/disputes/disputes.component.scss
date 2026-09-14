@@ -1,5 +1,14 @@
-﻿.disputes-feature {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-lg);
+.disputes-feature {
+  .table {
+    th {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    td {
+      font-size: 0.875rem;
+    }
+  }
 }

@@ -26,21 +26,27 @@ const routes: Routes = [
         loadChildren: () => import('./features/dashboard/dashboard.module').then(m => m.DashboardModule)
       },
       {
-        path: 'cards',
+        path: 'kyc',
         canActivate: [RoleGuard],
         data: { roles: ['ADMIN', 'BANK_OFFICER', 'CUSTOMER'] },
+        loadChildren: () => import('./features/kyc/kyc.module').then(m => m.KycModule)
+      },
+      {
+        path: 'cards',
+        canActivate: [RoleGuard],
+        data: { roles: ['ADMIN', 'BANK_OFFICER', 'FRAUD_ANALYST', 'CUSTOMER'] },
         loadChildren: () => import('./features/cards/cards.module').then(m => m.CardsModule)
       },
       {
         path: 'customer',
         canActivate: [RoleGuard],
-        data: { roles: ['ADMIN', 'BANK_OFFICER', 'CUSTOMER_SERVICE_AGENT'] },
+        data: { roles: ['ADMIN', 'BANK_OFFICER', 'FRAUD_ANALYST', 'CUSTOMER_SERVICE_AGENT'] },
         loadChildren: () => import('./features/customer/customer.module').then(m => m.CustomerModule)
       },
       {
         path: 'transactions',
         canActivate: [RoleGuard],
-        data: { roles: ['ADMIN', 'BANK_OFFICER', 'CUSTOMER'] },
+        data: { roles: ['ADMIN', 'BANK_OFFICER', 'FRAUD_ANALYST', 'CUSTOMER'] },
         loadChildren: () => import('./features/transactions/transactions.module').then(m => m.TransactionsModule)
       },
       {

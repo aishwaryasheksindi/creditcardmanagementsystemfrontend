@@ -51,31 +51,45 @@
       </div>
     </div>
 
-    <!-- Placeholder Metric 1: Customers -->
+    <!-- Metric 3: Customers -->
     <div class="col-sm-6 col-xl-3">
-      <div class="kpi-card h-100 p-3 rounded shadow-sm border opacity-75">
+      <div class="kpi-card h-100 p-3 rounded shadow-sm border">
         <div class="d-flex justify-content-between align-items-start mb-2">
           <span class="text-muted small fw-semibold text-uppercase">Cardholders</span>
-          <span class="badge bg-secondary-subtle text-secondary border">Coming Soon</span>
+          <span class="badge bg-success-subtle text-success border border-success-subtle">Live Data</span>
         </div>
         <div class="d-flex align-items-baseline gap-2 mb-1">
-          <div class="kpi-value text-muted fw-bold">--</div>
+          <div class="kpi-value text-dark fw-bold">
+            <span *ngIf="!isLoading && totalCustomers !== null">{{ totalCustomers }}</span>
+            <span *ngIf="isLoading" class="spinner-border spinner-border-sm text-secondary" role="status"></span>
+          </div>
+          <span class="text-muted small">profiles</span>
         </div>
-        <div class="small text-muted">Platform-wide customer profiles</div>
+        <div class="small text-muted mb-2">Registered cardholder accounts</div>
+        <a routerLink="/app/customer" class="kpi-link small fw-semibold text-decoration-none">
+          Manage Customers &rarr;
+        </a>
       </div>
     </div>
 
-    <!-- Placeholder Metric 2: Cards Issued -->
+    <!-- Metric 4: Cards Issued -->
     <div class="col-sm-6 col-xl-3">
-      <div class="kpi-card h-100 p-3 rounded shadow-sm border opacity-75">
+      <div class="kpi-card h-100 p-3 rounded shadow-sm border">
         <div class="d-flex justify-content-between align-items-start mb-2">
           <span class="text-muted small fw-semibold text-uppercase">Cards Issued</span>
-          <span class="badge bg-secondary-subtle text-secondary border">Coming Soon</span>
+          <span class="badge bg-success-subtle text-success border border-success-subtle">Live Data</span>
         </div>
         <div class="d-flex align-items-baseline gap-2 mb-1">
-          <div class="kpi-value text-muted fw-bold">--</div>
+          <div class="kpi-value text-dark fw-bold">
+            <span *ngIf="!isLoading && totalCards !== null">{{ totalCards }}</span>
+            <span *ngIf="isLoading" class="spinner-border spinner-border-sm text-secondary" role="status"></span>
+          </div>
+          <span class="text-muted small">cards</span>
         </div>
-        <div class="small text-muted">Active credit card accounts</div>
+        <div class="small text-muted mb-2">Active &amp; pending card portfolio</div>
+        <a routerLink="/app/cards" class="kpi-link small fw-semibold text-decoration-none">
+          Card Inventory &rarr;
+        </a>
       </div>
     </div>
   </div>

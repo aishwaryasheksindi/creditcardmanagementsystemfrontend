@@ -1,16 +1,225 @@
-﻿<div class="reports-feature">
+﻿<div class="reports-feature container-fluid px-0">
   <app-page-header
-    title="Audit & Financial Reports"
-    subtitle="Compliance summaries, regulatory filings, delinquency and merchant reports."
-    badgeText="Analytics">
+    title="Financial, Risk &amp; Compliance Reports"
+    subtitle="Executive portfolio summaries, credit line exposure, risk delinquency, and compliance filings."
+    badgeText="Executive Reporting">
+    <div header-actions class="d-flex align-items-center gap-2">
+      <button type="button" class="btn btn-secondary btn-sm d-inline-flex align-items-center gap-2" (click)="loadReportData()" [disabled]="isLoading">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+        </svg>
+        Re-generate
+      </button>
+
+      <button
+        type="button"
+        class="btn btn-primary btn-sm d-inline-flex align-items-center gap-2"
+        (click)="exportReport()"
+        [disabled]="isLoading || !reportGeneratedAt">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        Export Report (JSON)
+      </button>
+    </div>
   </app-page-header>
 
-  <app-card-container [borderAccent]="true" title="Audit & Financial Reports Overview">
-    <app-empty-state
-      title="Audit & Financial Reports Module Ready"
-      message="This foundation module is established and routing is operational. Integration with Spring Boot backend services will occur in subsequent phases."
-      actionLabel="View Dashboard"
-      (actionClicked)="false">
-    </app-empty-state>
-  </app-card-container>
+  <!-- Loading State -->
+  <div class="my-4" *ngIf="isLoading">
+    <app-loading-spinner message="Synthesizing multi-source financial and compliance reports..."></app-loading-spinner>
+  </div>
+
+  <!-- Error State -->
+  <div class="my-4" *ngIf="errorMessage && !isLoading">
+    <app-error-state
+      title="Unable to Generate Report"
+      [message]="errorMessage"
+      (retry)="loadReportData()">
+    </app-error-state>
+  </div>
+
+  <div *ngIf="!isLoading && !errorMessage">
+    <!-- Generation Timestamp Notice -->
+    <div class="d-flex justify-content-between align-items-center mb-3 text-muted small">
+      <span>Report Baseline: <strong>Live Real-Time Database</strong></span>
+      <span>Generated: <strong>{{ reportGeneratedAt | date:'medium' }}</strong></span>
+    </div>
+
+    <!-- 4 High-Level Executive KPI Cards -->
+    <div class="row g-3 g-md-4 mb-4">
+      <div class="col-12 col-sm-6 col-xl-3">
+        <app-card-container [borderAccent]="true">
+          <div class="metric-card d-flex flex-column gap-1">
+            <span class="metric-label text-uppercase fw-semibold small text-muted">Credit Line Pool</span>
+            <div class="metric-value-row d-flex align-items-center justify-content-between my-1">
+              <span class="fs-4 fw-bold text-dark">{{ totalCreditAllocated | currency:'INR':'symbol':'1.0-0' }}</span>
+              <span class="badge bg-primary-subtle text-primary border border-primary-subtle">{{ totalCardsCount }} Cards</span>
+            </div>
+            <p class="metric-desc text-secondary mb-0 small">Total authorized credit limit</p>
+          </div>
+        </app-card-container>
+      </div>
+
+      <div class="col-12 col-sm-6 col-xl-3">
+        <app-card-container [borderAccent]="false">
+          <div class="metric-card d-flex flex-column gap-1">
+            <span class="metric-label text-uppercase fw-semibold small text-muted">Portfolio Utilization</span>
+            <div class="metric-value-row d-flex align-items-center justify-content-between my-1">
+              <span class="fs-4 fw-bold" [ngClass]="utilizationRate > 70 ? 'text-danger' : (utilizationRate > 40 ? 'text-warning' : 'text-success')">
+                {{ utilizationRate }}%
+              </span>
+              <span class="badge bg-secondary-subtle text-dark border">Active Ratio</span>
+            </div>
+            <p class="metric-desc text-secondary mb-0 small">?{{ totalUtilizedCredit | number:'1.0-0' }} utilized</p>
+          </div>
+        </app-card-container>
+      </div>
+
+      <div class="col-12 col-sm-6 col-xl-3">
+        <app-card-container [borderAccent]="false">
+          <div class="metric-card d-flex flex-column gap-1">
+            <span class="metric-label text-uppercase fw-semibold small text-muted">Settled Spend</span>
+            <div class="metric-value-row d-flex align-items-center justify-content-between my-1">
+              <span class="fs-4 fw-bold text-success">{{ totalTransactionVolume | currency:'INR':'symbol':'1.0-0' }}</span>
+              <span class="badge bg-success-subtle text-success border border-success-subtle">{{ totalTransactionsCount }} Txns</span>
+            </div>
+            <p class="metric-desc text-secondary mb-0 small">Posted transaction volume</p>
+          </div>
+        </app-card-container>
+      </div>
+
+      <div class="col-12 col-sm-6 col-xl-3">
+        <app-card-container [borderAccent]="false">
+          <div class="metric-card d-flex flex-column gap-1">
+            <span class="metric-label text-uppercase fw-semibold small text-muted">Risk Incidents</span>
+            <div class="metric-value-row d-flex align-items-center justify-content-between my-1">
+              <span class="fs-4 fw-bold" [class.text-danger]="(activeFraudAlertsCount + unresolvedDisputesCount) > 0">
+                {{ activeFraudAlertsCount + unresolvedDisputesCount }}
+              </span>
+              <span class="badge" [ngClass]="(activeFraudAlertsCount + unresolvedDisputesCount) > 0 ? 'bg-danger-subtle text-danger border border-danger-subtle' : 'bg-success-subtle text-success border border-success-subtle'">
+                Active Cases
+              </span>
+            </div>
+            <p class="metric-desc text-secondary mb-0 small">{{ activeFraudAlertsCount }} Alerts &bull; {{ unresolvedDisputesCount }} Disputes</p>
+          </div>
+        </app-card-container>
+      </div>
+    </div>
+
+    <!-- Section 1: Portfolio Breakdown by Tier -->
+    <div class="row g-4 mb-4">
+      <div class="col-12 col-lg-6">
+        <app-card-container title="Credit Card Tier Allocation" subtitle="Distribution of credit lines and activation across card tiers">
+          <div class="table-responsive" *ngIf="tierSummaries.length > 0">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Tier Name</th>
+                  <th class="text-center">Total Cards</th>
+                  <th class="text-center">Active</th>
+                  <th class="text-end">Total Credit Line</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let tier of tierSummaries">
+                  <td>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle fw-semibold">
+                      {{ tier.tierName }}
+                    </span>
+                  </td>
+                  <td class="text-center fw-bold">{{ tier.cardCount }}</td>
+                  <td class="text-center text-success">{{ tier.activeCount }}</td>
+                  <td class="text-end fw-bold font-monospace">
+                    {{ tier.totalLimit | currency:'INR':'symbol':'1.0-0' }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div *ngIf="tierSummaries.length === 0" class="py-3 text-center text-muted small">
+            No cards found in portfolio.
+          </div>
+        </app-card-container>
+      </div>
+
+      <!-- Section 2: Transaction Channel / Type Breakdown -->
+      <div class="col-12 col-lg-6">
+        <app-card-container title="Transaction Activity Composition" subtitle="Authorizations aggregated by transaction category">
+          <div class="table-responsive" *ngIf="typeSummaries.length > 0">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Activity Type</th>
+                  <th class="text-center">Count</th>
+                  <th class="text-end">Aggregate Volume</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let ts of typeSummaries">
+                  <td>
+                    <span class="fw-semibold text-dark">{{ ts.type }}</span>
+                  </td>
+                  <td class="text-center fw-bold">{{ ts.count }}</td>
+                  <td class="text-end fw-bold font-monospace">
+                    {{ ts.totalVolume | currency:'INR':'symbol':'1.2-2' }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div *ngIf="typeSummaries.length === 0" class="py-3 text-center text-muted small">
+            No transactions recorded.
+          </div>
+        </app-card-container>
+      </div>
+    </div>
+
+    <!-- Section 3: Risk, Compliance & Delinquency Summary -->
+    <app-card-container title="Risk &amp; Compliance Audit Standing" subtitle="Security flags, delinquency, and containment status">
+      <div class="row g-3">
+        <div class="col-12 col-md-4">
+          <div class="p-3 border rounded-3 bg-light">
+            <span class="text-muted small d-block">KYC Compliance Standing</span>
+            <strong class="fs-5 text-dark">{{ verifiedCustomersCount }} of {{ totalCustomersCount }} Verified</strong>
+            <div class="progress mt-2" style="height: 6px;">
+              <div
+                class="progress-bar bg-success"
+                [style.width.%]="totalCustomersCount > 0 ? (verifiedCustomersCount / totalCustomersCount * 100) : 0">
+              </div>
+            </div>
+            <span class="small text-muted mt-1 d-block">
+              {{ totalCustomersCount > 0 ? ((verifiedCustomersCount / totalCustomersCount * 100) | number:'1.0-0') : 0 }}% Identity Verified
+            </span>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-4">
+          <div class="p-3 border rounded-3 bg-light">
+            <span class="text-muted small d-block">Security Containment (Blocked)</span>
+            <strong class="fs-5" [ngClass]="blockedCardsCount > 0 ? 'text-danger' : 'text-success'">
+              {{ blockedCardsCount }} Card(s) Suspended
+            </strong>
+            <div class="small text-muted mt-2">
+              Cards currently restricted from payment gateway authorization due to security alerts.
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-4">
+          <div class="p-3 border rounded-3 bg-light">
+            <span class="text-muted small d-block">Active Installment Liability</span>
+            <strong class="fs-5 text-primary">
+              {{ totalEmiOutstanding | currency:'INR':'symbol':'1.0-0' }}
+            </strong>
+            <div class="small text-muted mt-2">
+              Cumulative balance scheduled under monthly installment repayment plans.
+            </div>
+          </div>
+        </div>
+      </div>
+    </app-card-container>
+  </div>
 </div>

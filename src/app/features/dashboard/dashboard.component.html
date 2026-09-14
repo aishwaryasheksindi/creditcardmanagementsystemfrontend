@@ -31,6 +31,86 @@
     </div>
 
     <div *ngIf="customer">
+      <!-- Dynamic Customer Journey Stage Banner -->
+      <!-- Stage 1: KYC Verified, No Card Issued Yet -->
+      <div *ngIf="hasVerifiedKyc && !hasCards" class="card border-0 rounded-4 shadow-sm mb-4 bg-success-subtle border-start border-success border-4">
+        <div class="card-body p-4 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+          <div class="d-flex align-items-center gap-3">
+            <div class="rounded-circle p-2 bg-success text-white d-flex align-items-center justify-content-center flex-shrink-0" style="width: 48px; height: 48px;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                <polyline points="9 12 11 14 15 10"></polyline>
+              </svg>
+            </div>
+            <div>
+              <div class="d-flex align-items-center gap-2 mb-1">
+                <h5 class="mb-0 fw-bold text-success-emphasis">KYC STATUS: VERIFIED ✅</h5>
+                <span class="badge bg-success">No Card Issued Yet</span>
+              </div>
+              <p class="mb-0 text-secondary small">
+                Your identity verification is confirmed. Next step: Get your CardNest credit card to start spending and earning rewards.
+              </p>
+            </div>
+          </div>
+          <button type="button" class="btn btn-primary btn-sm px-3 py-2 text-nowrap" (click)="navigateToCards()">
+            Get Your CardNest Card &rarr;
+          </button>
+        </div>
+      </div>
+
+      <!-- Stage 2: Card Issued, Pending Activation -->
+      <div *ngIf="firstInactiveCard" class="card border-0 rounded-4 shadow-sm mb-4 bg-warning-subtle border-start border-warning border-4">
+        <div class="card-body p-4 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+          <div class="d-flex align-items-center gap-3">
+            <div class="rounded-circle p-2 bg-warning text-dark d-flex align-items-center justify-content-center flex-shrink-0" style="width: 48px; height: 48px;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+            </div>
+            <div>
+              <div class="d-flex align-items-center gap-2 mb-1">
+                <h5 class="mb-0 fw-bold text-warning-emphasis">Card Status: INACTIVE ⏳</h5>
+                <span class="badge bg-warning text-dark">{{ firstInactiveCard.cardReference | maskCard }}</span>
+              </div>
+              <p class="mb-0 text-secondary small">
+                Your credit card has been issued. Next step: Activate your card with an OTP verification.
+              </p>
+            </div>
+          </div>
+          <button type="button" class="btn btn-warning btn-sm px-3 py-2 text-nowrap fw-semibold" (click)="viewCardDetails(firstInactiveCard.cardId)">
+            Activate Your Card &rarr;
+          </button>
+        </div>
+      </div>
+
+      <!-- Stage 3: Card Active & Ready For First Transaction -->
+      <div *ngIf="activeCardsCount > 0 && recentTransactions.length === 0" class="card border-0 rounded-4 shadow-sm mb-4 bg-info-subtle border-start border-info border-4">
+        <div class="card-body p-4 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+          <div class="d-flex align-items-center gap-3">
+            <div class="rounded-circle p-2 bg-info text-white d-flex align-items-center justify-content-center flex-shrink-0" style="width: 48px; height: 48px;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                <line x1="1" y1="10" x2="23" y2="10"></line>
+              </svg>
+            </div>
+            <div>
+              <div class="d-flex align-items-center gap-2 mb-1">
+                <h5 class="mb-0 fw-bold text-info-emphasis">Card Status: ACTIVE ✅</h5>
+                <span class="badge bg-success">Ready For Use</span>
+              </div>
+              <p class="mb-0 text-secondary small">
+                Your card is active with ₹{{ availableCredit | number:'1.0-0' }} available limit. Next step: Set your 4-digit PIN and start making purchases.
+              </p>
+            </div>
+          </div>
+          <button type="button" class="btn btn-info btn-sm px-3 py-2 text-nowrap text-white fw-semibold" (click)="viewCardDetails(firstActiveCard!.cardId)">
+            Set PIN / View Card &rarr;
+          </button>
+        </div>
+      </div>
+
       <!-- 6 Live Metrics Cards -->
       <div class="row g-3 g-md-4 mb-4">
         <!-- Active Cards -->
@@ -302,59 +382,974 @@
     </div>
   </ng-container>
 
-  <!-- Staff Dashboard (Admin, Bank Officer, CSA, etc.) -->
+  <!-- Staff Dashboard (Admin, Bank Officer, CSA, Fraud Analyst) -->
   <ng-template #staffDashboard>
     <app-page-header
-      title="Executive Dashboard"
-      subtitle="Overview of credit operations, fraud telemetry, and portfolio status."
-      badgeText="Live System">
+      [title]="isFraudAnalyst ? ('Fraud & Security Operations Control Center - ' + analystDisplayName) : (isCustomerServiceAgent ? ('Customer Service Center - ' + csaDisplayName) : (isBankOfficer ? ('Branch Operational Control Center - ' + officerDisplayName) : 'Executive Command Center'))"
+      [subtitle]="isFraudAnalyst ? 'Real-time transaction surveillance, anomaly telemetry, risk scoring, and security containment.' : (isCustomerServiceAgent ? 'Cardholder assistance workspace, customer account directory, and dispute resolution queue.' : (isBankOfficer ? ('Branch operations, customer portfolio (' + officerBranchCode + '), KYC verification queue, and card lifecycle management.') : 'Operational telemetry, card portfolio health, fraud alerts, and platform governance.'))"
+      [badgeText]="isFraudAnalyst ? 'Fraud Control Center' : (isCustomerServiceAgent ? 'Customer Support' : (isBankOfficer ? ('Branch ' + officerBranchCode) : 'Staff Portal'))">
+      <div header-actions>
+        <button type="button" class="btn btn-secondary btn-sm d-inline-flex align-items-center gap-2" (click)="loadStaffDashboard(true)" [disabled]="isLoading">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+          </svg>
+          Refresh Data
+        </button>
+      </div>
     </app-page-header>
 
-    <div class="row g-3 g-md-4 mb-4">
-      <div class="col-12 col-md-6 col-xl-4">
-        <app-card-container [borderAccent]="true">
-          <div class="metric-card d-flex flex-column gap-1">
-            <span class="metric-label text-uppercase fw-semibold">Active Portfolio</span>
-            <div class="metric-value-row d-flex align-items-center justify-content-between my-2">
-              <span class="metric-value fs-4 fw-bold">Live</span>
-              <span class="badge bg-primary text-white">Online</span>
-            </div>
-            <p class="metric-desc text-secondary mb-0">Connected to Spring Boot API via Core ApiService</p>
-          </div>
-        </app-card-container>
-      </div>
-
-      <div class="col-12 col-md-6 col-xl-4">
-        <app-card-container [borderAccent]="true">
-          <div class="metric-card d-flex flex-column gap-1">
-            <span class="metric-label text-uppercase fw-semibold">Fraud Telemetry</span>
-            <div class="metric-value-row d-flex align-items-center justify-content-between my-2">
-              <span class="metric-value fs-4 fw-bold">Active</span>
-              <span class="badge bg-success text-white">Engine Online</span>
-            </div>
-            <p class="metric-desc text-secondary mb-0">AI Risk Monitoring module configured</p>
-          </div>
-        </app-card-container>
-      </div>
-
-      <div class="col-12 col-md-6 col-xl-4">
-        <app-card-container [borderAccent]="true">
-          <div class="metric-card d-flex flex-column gap-1">
-            <span class="metric-label text-uppercase fw-semibold">Settlement Engine</span>
-            <div class="metric-value-row d-flex align-items-center justify-content-between my-2">
-              <span class="metric-value fs-4 fw-bold">Synchronized</span>
-              <span class="badge bg-primary text-white">Operational</span>
-            </div>
-            <p class="metric-desc text-secondary mb-0">Transaction processing pipeline ready</p>
-          </div>
-        </app-card-container>
-      </div>
+    <!-- Loading State -->
+    <div class="my-4" *ngIf="isLoading">
+      <app-loading-spinner message="Aggregating platform metrics from core banking services..."></app-loading-spinner>
     </div>
 
-    <div class="content-section">
-      <app-card-container title="Quick Navigation & System Modules" subtitle="Enterprise Credit Card Management Features">
-        <p class="mb-0 text-secondary">CardNest is structured with 14 isolated, lazily-loaded feature modules following clean Angular enterprise architecture.</p>
+    <!-- Error State -->
+    <div class="my-4" *ngIf="errorMessage && !isLoading">
+      <app-error-state
+        title="Unable to Load Dashboard"
+        [message]="errorMessage"
+        (retry)="loadStaffDashboard(true)">
+      </app-error-state>
+    </div>
+
+    <div *ngIf="!isLoading && !errorMessage">
+      <ng-container *ngIf="isFraudAnalyst; else nonFraudStaffView">
+        <!-- Fraud Analyst Surveillance Deck Banner -->
+        <div class="card border-0 rounded-4 shadow-sm mb-4 bg-danger-subtle border-start border-danger border-4">
+          <div class="card-body p-4 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+            <div class="d-flex align-items-center gap-3">
+              <div class="rounded-circle p-2 bg-danger text-white d-flex align-items-center justify-content-center flex-shrink-0" style="width: 48px; height: 48px;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+              </div>
+              <div>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                  <h5 class="mb-0 fw-bold text-danger-emphasis">Surveillance &amp; Threat Containment Center</h5>
+                  <span class="badge bg-danger">Lead Analyst: {{ analystDisplayName }}</span>
+                </div>
+                <p class="mb-0 text-secondary small">
+                  {{ staffStats.monitoredTransactionsCount }} transactions monitored &bull;
+                  {{ staffStats.monitoredTotalVolume | currency:'INR':'symbol':'1.0-0' }} total surveillance volume &bull;
+                  {{ staffStats.activeFraudAlerts }} active alerts &bull;
+                  {{ staffStats.highRiskCount }} high-risk transactions
+                </p>
+              </div>
+            </div>
+            <div class="d-flex gap-2">
+              <a routerLink="/app/fraud" class="btn btn-danger btn-sm px-3 py-2 text-nowrap fw-semibold">
+                Investigate Alerts ({{ staffStats.activeFraudAlerts }}) &rarr;
+              </a>
+              <a routerLink="/app/ai" class="btn btn-outline-danger btn-sm px-3 py-2 text-nowrap fw-semibold">
+                AI Anomaly Scan &rarr;
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4 Primary Fraud KPI Cards -->
+        <div class="row g-3 g-md-4 mb-4">
+          <!-- Metric 1: Total Transactions Monitored -->
+          <div class="col-12 col-sm-6 col-xl-3">
+            <app-card-container [borderAccent]="true">
+              <div class="metric-card d-flex flex-column gap-1">
+                <span class="metric-label text-uppercase fw-semibold small text-muted">Transactions Monitored</span>
+                <div class="metric-value-row d-flex align-items-center justify-content-between my-1">
+                  <span class="fs-3 fw-bold text-dark">{{ staffStats.monitoredTransactionsCount }}</span>
+                  <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
+                    {{ staffStats.monitoredTotalVolume | currency:'INR':'symbol':'1.0-0' }}
+                  </span>
+                </div>
+                <p class="metric-desc text-secondary mb-0 small">Platform surveillance volume</p>
+              </div>
+            </app-card-container>
+          </div>
+
+          <!-- Metric 2: Active Fraud Alerts -->
+          <div class="col-12 col-sm-6 col-xl-3">
+            <app-card-container [borderAccent]="true">
+              <div class="metric-card d-flex flex-column gap-1">
+                <span class="metric-label text-uppercase fw-semibold small text-muted">Active Fraud Alerts</span>
+                <div class="metric-value-row d-flex align-items-center justify-content-between my-1">
+                  <span class="fs-3 fw-bold text-danger">{{ staffStats.activeFraudAlerts }}</span>
+                  <span class="badge bg-danger-subtle text-danger border border-danger-subtle">
+                    {{ staffStats.openAlertsCount }} Open &bull; {{ staffStats.investigatingAlertsCount }} In Review
+                  </span>
+                </div>
+                <p class="metric-desc text-secondary mb-0 small">Awaiting resolution</p>
+              </div>
+            </app-card-container>
+          </div>
+
+          <!-- Metric 3: High Risk Evaluations -->
+          <div class="col-12 col-sm-6 col-xl-3">
+            <app-card-container [borderAccent]="true">
+              <div class="metric-card d-flex flex-column gap-1">
+                <span class="metric-label text-uppercase fw-semibold small text-muted">High Risk Scores</span>
+                <div class="metric-value-row d-flex align-items-center justify-content-between my-1">
+                  <span class="fs-3 fw-bold text-danger">{{ staffStats.highRiskCount }}</span>
+                  <span class="badge bg-danger text-white">Score &ge; 75</span>
+                </div>
+                <p class="metric-desc text-secondary mb-0 small">Elevated risk transactions</p>
+              </div>
+            </app-card-container>
+          </div>
+
+          <!-- Metric 4: Blocked / Compromised Cards -->
+          <div class="col-12 col-sm-6 col-xl-3">
+            <app-card-container [borderAccent]="true">
+              <div class="metric-card d-flex flex-column gap-1">
+                <span class="metric-label text-uppercase fw-semibold small text-muted">Locked Cards</span>
+                <div class="metric-value-row d-flex align-items-center justify-content-between my-1">
+                  <span class="fs-3 fw-bold text-warning">{{ staffStats.blockedCards }}</span>
+                  <span class="badge bg-warning-subtle text-warning border border-warning-subtle">Contained</span>
+                </div>
+                <p class="metric-desc text-secondary mb-0 small">Fraud security holds active</p>
+              </div>
+            </app-card-container>
+          </div>
+        </div>
+
+        <!-- Secondary Metrics Row: Alert Dispositions & Risk Tiers -->
+        <div class="row g-3 g-md-4 mb-4">
+          <div class="col-6 col-lg-3">
+            <div class="card border rounded-3 p-3 bg-light">
+              <span class="text-muted small text-uppercase fw-semibold">Confirmed Fraud</span>
+              <div class="d-flex align-items-baseline justify-content-between mt-2">
+                <span class="fs-4 fw-bold text-danger">{{ staffStats.confirmedAlertsCount }}</span>
+                <span class="badge bg-danger">Fraud Confirmed</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-6 col-lg-3">
+            <div class="card border rounded-3 p-3 bg-light">
+              <span class="text-muted small text-uppercase fw-semibold">False Positives</span>
+              <div class="d-flex align-items-baseline justify-content-between mt-2">
+                <span class="fs-4 fw-bold text-secondary">{{ staffStats.falsePositiveAlertsCount }}</span>
+                <span class="badge bg-secondary-subtle text-secondary border">Cleared</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-6 col-lg-3">
+            <div class="card border rounded-3 p-3 bg-light">
+              <span class="text-muted small text-uppercase fw-semibold">Medium Risk Tiers</span>
+              <div class="d-flex align-items-baseline justify-content-between mt-2">
+                <span class="fs-4 fw-bold text-warning">{{ staffStats.mediumRiskCount }}</span>
+                <span class="badge bg-warning-subtle text-warning border border-warning-subtle">Score 40-74</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-6 col-lg-3">
+            <div class="card border rounded-3 p-3 bg-light">
+              <span class="text-muted small text-uppercase fw-semibold">Low Risk Baseline</span>
+              <div class="d-flex align-items-baseline justify-content-between mt-2">
+                <span class="fs-4 fw-bold text-success">{{ staffStats.lowRiskCount }}</span>
+                <span class="badge bg-success-subtle text-success border border-success-subtle">Normal</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Action Controls for Fraud Analyst -->
+        <app-card-container title="Fraud Investigation &amp; Threat Intelligence Controls" subtitle="Direct operational actions for suspicious transactions, behavioral models, and cardholder security" class="mb-4">
+          <div class="row g-3">
+            <div class="col-6 col-md-4 col-xl-2">
+              <a routerLink="/app/fraud" class="btn btn-outline-danger w-100 py-3 d-flex flex-column align-items-center justify-content-center gap-2 text-decoration-none">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <span class="small fw-bold">Fraud Alerts</span>
+              </a>
+            </div>
+
+            <div class="col-6 col-md-4 col-xl-2">
+              <a routerLink="/app/ai" class="btn btn-outline-primary w-100 py-3 d-flex flex-column align-items-center justify-content-center gap-2 text-decoration-none">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
+                  <rect x="9" y="9" width="6" height="6"></rect>
+                  <line x1="9" y1="1" x2="9" y2="4"></line>
+                  <line x1="15" y1="1" x2="15" y2="4"></line>
+                  <line x1="9" y1="20" x2="9" y2="23"></line>
+                  <line x1="15" y1="20" x2="15" y2="23"></line>
+                  <line x1="20" y1="9" x2="23" y2="9"></line>
+                  <line x1="20" y1="14" x2="23" y2="14"></line>
+                  <line x1="1" y1="9" x2="4" y2="9"></line>
+                  <line x1="1" y1="14" x2="4" y2="14"></line>
+                </svg>
+                <span class="small fw-bold">AI Insights</span>
+              </a>
+            </div>
+
+            <div class="col-6 col-md-4 col-xl-2">
+              <a routerLink="/app/transactions" class="btn btn-outline-secondary w-100 py-3 d-flex flex-column align-items-center justify-content-center gap-2 text-decoration-none">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                  <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                  <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                </svg>
+                <span class="small fw-bold">Transactions</span>
+              </a>
+            </div>
+
+            <div class="col-6 col-md-4 col-xl-2">
+              <a routerLink="/app/cards" class="btn btn-outline-secondary w-100 py-3 d-flex flex-column align-items-center justify-content-center gap-2 text-decoration-none">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                  <line x1="1" y1="10" x2="23" y2="10"></line>
+                </svg>
+                <span class="small fw-bold">Card Security</span>
+              </a>
+            </div>
+
+            <div class="col-6 col-md-4 col-xl-2">
+              <a routerLink="/app/customer" class="btn btn-outline-secondary w-100 py-3 d-flex flex-column align-items-center justify-content-center gap-2 text-decoration-none">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+                <span class="small fw-bold">Customer Directory</span>
+              </a>
+            </div>
+
+            <div class="col-6 col-md-4 col-xl-2">
+              <a routerLink="/app/ai" [queryParams]="{tab: 'anomalies'}" class="btn btn-outline-warning w-100 py-3 d-flex flex-column align-items-center justify-content-center gap-2 text-decoration-none">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                </svg>
+                <span class="small fw-bold">Anomaly Scans</span>
+              </a>
+            </div>
+          </div>
+        </app-card-container>
+
+        <!-- 2 Live Telemetry Tables: Active Alerts & Surveillance Feed -->
+        <div class="row g-4 mb-4">
+          <!-- Live Fraud Alerts Feed -->
+          <div class="col-12 col-xl-6">
+            <app-card-container title="Live Fraud Alerts Stream" subtitle="Recent security triggers requiring analyst review">
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Alert ID</th>
+                      <th>Transaction</th>
+                      <th>Status</th>
+                      <th>Trigger Reason</th>
+                      <th class="text-end">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let alert of staffRecentFraudAlerts">
+                      <td class="font-monospace fw-semibold small text-danger">{{ alert.fraudAlertId }}</td>
+                      <td class="font-monospace small text-primary">{{ alert.transactionId }}</td>
+                      <td>
+                        <span class="badge" [ngClass]="alert.status === 'CONFIRMED' ? 'bg-danger text-white' : (alert.status === 'INVESTIGATING' ? 'bg-warning text-dark' : (alert.status === 'FALSE_POSITIVE' ? 'bg-secondary-subtle text-secondary border' : 'bg-danger-subtle text-danger border'))">
+                          {{ alert.status }}
+                        </span>
+                      </td>
+                      <td class="small text-truncate" style="max-width: 180px;">{{ alert.reason }}</td>
+                      <td class="text-end">
+                        <a routerLink="/app/fraud" class="btn btn-sm btn-outline-primary py-0 px-2 small">
+                          Review &rarr;
+                        </a>
+                      </td>
+                    </tr>
+                    <tr *ngIf="staffRecentFraudAlerts.length === 0">
+                      <td colspan="5" class="text-center text-muted py-3">No fraud alerts recorded.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </app-card-container>
+          </div>
+
+          <!-- Surveillance Transactions Feed -->
+          <div class="col-12 col-xl-6">
+            <app-card-container title="Transaction Surveillance Stream" subtitle="Latest transactions monitored for velocity and risk">
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Txn ID</th>
+                      <th>Card</th>
+                      <th>Amount</th>
+                      <th>Location</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let txn of staffRecentTransactions">
+                      <td class="font-monospace small fw-semibold text-primary">{{ txn.transactionId }}</td>
+                      <td class="font-monospace small text-muted">{{ staffCardsMap.get(txn.cardId) || txn.cardId }}</td>
+                      <td class="fw-semibold small">{{ txn.amount | currency:'INR':'symbol':'1.0-0' }}</td>
+                      <td class="small text-muted">{{ txn.transactionLocation || '—' }}</td>
+                      <td>
+                        <span class="badge" [ngClass]="txn.transactionStatus === 'COMPLETED' ? 'bg-success-subtle text-success border border-success-subtle' : (txn.transactionStatus === 'FAILED' ? 'bg-danger-subtle text-danger border border-danger-subtle' : 'bg-secondary-subtle text-secondary border')">
+                          {{ txn.transactionStatus }}
+                        </span>
+                      </td>
+                    </tr>
+                    <tr *ngIf="staffRecentTransactions.length === 0">
+                      <td colspan="5" class="text-center text-muted py-3">No transactions recorded.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </app-card-container>
+          </div>
+        </div>
+      </ng-container>
+
+      <ng-template #nonFraudStaffView>
+        <!-- Customer Service Agent Dedicated Support View -->
+        <ng-container *ngIf="isCustomerServiceAgent; else standardStaffView">
+          <!-- Customer Service Agent Operational Support Banner -->
+          <div class="card border-0 rounded-4 shadow-sm mb-4 bg-info-subtle border-start border-info border-4">
+            <div class="card-body p-4 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+              <div class="d-flex align-items-center gap-3">
+                <div class="rounded-circle p-2 bg-info text-white d-flex align-items-center justify-content-center flex-shrink-0" style="width: 48px; height: 48px;">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+                  </svg>
+                </div>
+                <div>
+                  <div class="d-flex align-items-center gap-2 mb-1">
+                    <h5 class="mb-0 fw-bold text-info-emphasis">Customer Service Operations Desk</h5>
+                    <span class="badge bg-info">Agent: {{ csaDisplayName }}</span>
+                  </div>
+                  <p class="mb-0 text-secondary small">
+                    Assisting cardholders across branches. Currently managing <strong>{{ staffStats.totalCustomers }}</strong> cardholders with <strong>{{ staffStats.openDisputes }}</strong> open dispute cases.
+                  </p>
+                </div>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <a routerLink="/app/customer" class="btn btn-info btn-sm text-white px-3 fw-medium d-inline-flex align-items-center gap-2 shadow-sm">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                  </svg>
+                  Customer Directory
+                </a>
+                <a routerLink="/app/disputes" class="btn btn-outline-info btn-sm px-3 fw-medium d-inline-flex align-items-center gap-2">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                  Dispute Queue
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Customer Service KPI Metric Cards -->
+          <div class="row g-3 g-md-4 mb-4">
+            <!-- Metric 1: Customer Directory -->
+            <div class="col-12 col-sm-6 col-xl-3">
+              <app-card-container [borderAccent]="true">
+                <div class="metric-card d-flex flex-column gap-1">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <span class="metric-label text-uppercase fw-semibold">Customer Directory</span>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle">
+                      {{ staffStats.verifiedCustomers }} Verified
+                    </span>
+                  </div>
+                  <div class="metric-value-row d-flex align-items-center justify-content-between my-2">
+                    <span class="metric-value fs-3 fw-bold text-dark">{{ staffStats.totalCustomers }}</span>
+                    <a routerLink="/app/customer" class="btn btn-outline-primary btn-sm py-1 px-2">Directory &rarr;</a>
+                  </div>
+                  <p class="metric-desc text-secondary mb-0 small">Registered cardholders across branches</p>
+                </div>
+              </app-card-container>
+            </div>
+
+            <!-- Metric 2: Open Disputes -->
+            <div class="col-12 col-sm-6 col-xl-3">
+              <app-card-container [borderAccent]="true">
+                <div class="metric-card d-flex flex-column gap-1">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <span class="metric-label text-uppercase fw-semibold">Open Disputes</span>
+                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle">
+                      {{ staffStats.raisedDisputes }} Raised
+                    </span>
+                  </div>
+                  <div class="metric-value-row d-flex align-items-center justify-content-between my-2">
+                    <span class="metric-value fs-3 fw-bold" [class.text-warning]="staffStats.openDisputes > 0">{{ staffStats.openDisputes }}</span>
+                    <a routerLink="/app/disputes" class="btn btn-outline-warning btn-sm py-1 px-2">Disputes &rarr;</a>
+                  </div>
+                  <p class="metric-desc text-secondary mb-0 small">Awaiting review or resolution</p>
+                </div>
+              </app-card-container>
+            </div>
+
+            <!-- Metric 3: Resolved Disputes -->
+            <div class="col-12 col-sm-6 col-xl-3">
+              <app-card-container [borderAccent]="false">
+                <div class="metric-card d-flex flex-column gap-1">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <span class="metric-label text-uppercase fw-semibold">Resolved Cases</span>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle">Completed</span>
+                  </div>
+                  <div class="metric-value-row d-flex align-items-center justify-content-between my-2">
+                    <span class="metric-value fs-3 fw-bold text-success">{{ staffStats.resolvedDisputes }}</span>
+                    <a routerLink="/app/disputes" class="btn btn-outline-success btn-sm py-1 px-2">History &rarr;</a>
+                  </div>
+                  <p class="metric-desc text-secondary mb-0 small">Dispute cases successfully resolved</p>
+                </div>
+              </app-card-container>
+            </div>
+
+            <!-- Metric 4: Active Cards -->
+            <div class="col-12 col-sm-6 col-xl-3">
+              <app-card-container [borderAccent]="false">
+                <div class="metric-card d-flex flex-column gap-1">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <span class="metric-label text-uppercase fw-semibold">Active Cards</span>
+                    <span class="badge bg-info-subtle text-info border border-info-subtle">In Service</span>
+                  </div>
+                  <div class="metric-value-row d-flex align-items-center justify-content-between my-2">
+                    <span class="metric-value fs-3 fw-bold text-dark">{{ staffStats.activeCards }}</span>
+                    <span class="badge bg-light text-muted border">{{ staffStats.totalCards }} Total</span>
+                  </div>
+                  <p class="metric-desc text-secondary mb-0 small">Cardholder accounts currently active</p>
+                </div>
+              </app-card-container>
+            </div>
+          </div>
+
+          <!-- Customer Support Workspace: 2-Column Grid -->
+          <div class="row g-4 mb-4">
+            <!-- Left Column: Active Customer Disputes Queue -->
+            <div class="col-12 col-xl-8">
+              <app-card-container title="Customer Support & Dispute Queue" subtitle="Cardholder disputes requiring customer service assistance and investigation">
+                <div header-actions>
+                  <a routerLink="/app/disputes" class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1">
+                    Manage All Disputes
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                      <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                  </a>
+                </div>
+
+                <div class="table-responsive">
+                  <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                      <tr class="text-secondary small fw-semibold">
+                        <th>Dispute ID</th>
+                        <th>Transaction ID</th>
+                        <th>Reason</th>
+                        <th>Status</th>
+                        <th>Created At</th>
+                        <th class="text-end">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let dispute of staffRecentDisputes">
+                        <td class="fw-bold font-monospace small">#{{ dispute.id || dispute.disputeId }}</td>
+                        <td>
+                          <span class="badge bg-light text-dark border font-monospace">
+                            TXN #{{ dispute.transactionId || dispute.transaction?.id || 'N/A' }}
+                          </span>
+                        </td>
+                        <td>
+                          <span class="fw-medium text-dark">{{ dispute.reason || dispute.disputeType || 'Disputed Charge' }}</span>
+                          <small *ngIf="dispute.description || dispute.comments" class="text-muted d-block text-truncate" style="max-width: 200px;">
+                            {{ dispute.description || dispute.comments }}
+                          </small>
+                        </td>
+                        <td>
+                          <span class="badge rounded-pill px-2 py-1" [ngClass]="getDisputeStatusBadge(dispute.status)">
+                            {{ dispute.status }}
+                          </span>
+                        </td>
+                        <td class="text-secondary small">
+                          {{ (dispute.createdAt || dispute.raisedAt || dispute.date) ? ((dispute.createdAt || dispute.raisedAt || dispute.date) | date:'mediumDate') : 'Recent' }}
+                        </td>
+                        <td class="text-end">
+                          <a routerLink="/app/disputes" class="btn btn-sm btn-outline-primary py-1 px-2">
+                            Review
+                          </a>
+                        </td>
+                      </tr>
+                      <tr *ngIf="staffRecentDisputes.length === 0">
+                        <td colspan="6" class="text-center text-muted py-4">
+                          <div class="d-flex flex-column align-items-center justify-content-center">
+                            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="text-muted mb-2">
+                              <circle cx="12" cy="12" r="10"></circle>
+                              <path d="M8 12h8"></path>
+                            </svg>
+                            <span>No customer disputes in queue. All inquiries resolved.</span>
+                          </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </app-card-container>
+            </div>
+
+            <!-- Right Column: Quick Customer Lookup & Quick Actions -->
+            <div class="col-12 col-xl-4">
+              <div class="d-flex flex-column gap-4">
+                <!-- Customer Lookup Navigation Card -->
+                <app-card-container title="Customer Lookup" subtitle="Quick access to customer records">
+                  <p class="text-secondary small mb-3">
+                    Search and assist cardholders with account inquiries, KYC verification details, and card status.
+                  </p>
+                  <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-primary d-flex align-items-center justify-content-center gap-2 py-2" (click)="navigateToCustomer()">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                      </svg>
+                      Open Customer Directory
+                    </button>
+                  </div>
+                </app-card-container>
+
+                <!-- Support Quick Actions Card -->
+                <app-card-container title="Support Quick Actions" subtitle="Permitted customer service tools">
+                  <div class="row g-2">
+                    <div class="col-12">
+                      <a routerLink="/app/customer" class="btn btn-outline-secondary w-100 py-2 d-flex align-items-center justify-content-between text-decoration-none">
+                        <div class="d-flex align-items-center gap-2">
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-primary">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                          </svg>
+                          <span class="small fw-semibold text-dark">Customer Directory</span>
+                        </div>
+                        <span class="badge bg-primary-subtle text-primary">{{ staffStats.totalCustomers }}</span>
+                      </a>
+                    </div>
+
+                    <div class="col-12">
+                      <a routerLink="/app/disputes" class="btn btn-outline-secondary w-100 py-2 d-flex align-items-center justify-content-between text-decoration-none">
+                        <div class="d-flex align-items-center gap-2">
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-warning">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                          </svg>
+                          <span class="small fw-semibold text-dark">Disputes Center</span>
+                        </div>
+                        <span class="badge bg-warning-subtle text-warning">{{ staffStats.openDisputes }} Open</span>
+                      </a>
+                    </div>
+
+                    <div class="col-12">
+                      <a routerLink="/app/profile" class="btn btn-outline-secondary w-100 py-2 d-flex align-items-center justify-content-between text-decoration-none">
+                        <div class="d-flex align-items-center gap-2">
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-info">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                          </svg>
+                          <span class="small fw-semibold text-dark">Staff Profile &amp; Settings</span>
+                        </div>
+                        <span class="badge bg-secondary-subtle text-secondary">Active</span>
+                      </a>
+                    </div>
+                  </div>
+                </app-card-container>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+
+        <!-- Standard Staff View (Admin / Bank Officer) -->
+        <ng-template #standardStaffView>
+        <!-- Bank Officer Branch Operational Summary Banner -->
+        <div *ngIf="isBankOfficer" class="card border-0 rounded-4 shadow-sm mb-4 bg-primary-subtle border-start border-primary border-4">
+        <div class="card-body p-4 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+          <div class="d-flex align-items-center gap-3">
+            <div class="rounded-circle p-2 bg-primary text-white d-flex align-items-center justify-content-center flex-shrink-0" style="width: 48px; height: 48px;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+              </svg>
+            </div>
+            <div>
+              <div class="d-flex align-items-center gap-2 mb-1">
+                <h5 class="mb-0 fw-bold text-primary-emphasis">Branch {{ officerBranchCode }} Operations Center</h5>
+                <span class="badge bg-primary">Officer: {{ officerDisplayName }}</span>
+              </div>
+              <p class="mb-0 text-secondary small">
+                {{ staffStats.branchCustomers }} branch customers &bull; {{ staffStats.branchPendingKyc }} pending KYC review &bull; {{ staffStats.branchActiveCards }} active cards &bull; {{ staffStats.branchSettledVolume | currency:'INR':'symbol':'1.0-0' }} branch settled volume
+              </p>
+            </div>
+          </div>
+          <div class="d-flex gap-2">
+            <a routerLink="/app/kyc" class="btn btn-primary btn-sm px-3 py-2 text-nowrap fw-semibold">
+              Review Branch KYC ({{ staffStats.branchPendingKyc }}) &rarr;
+            </a>
+          </div>
+        </div>
+      </div>
+      <!-- 6 Operational KPI Cards -->
+      <div class="row g-3 g-md-4 mb-4">
+        <!-- Metric 1: Customer Base -->
+        <div class="col-12 col-sm-6 col-xl-4">
+          <app-card-container [borderAccent]="true">
+            <div class="metric-card d-flex flex-column gap-1">
+              <div class="d-flex justify-content-between align-items-center">
+                <span class="metric-label text-uppercase fw-semibold">Customer Portfolio</span>
+                <span class="badge bg-success-subtle text-success border border-success-subtle">
+                  {{ staffStats.verifiedCustomers }} Verified
+                </span>
+              </div>
+              <div class="metric-value-row d-flex align-items-center justify-content-between my-2">
+                <span class="metric-value fs-3 fw-bold text-dark">{{ staffStats.totalCustomers }}</span>
+                <a routerLink="/app/customer" class="btn btn-outline-primary btn-sm py-1 px-2">View Portfolio &rarr;</a>
+              </div>
+              <p class="metric-desc text-secondary mb-0 small">Registered cardholders across branches</p>
+            </div>
+          </app-card-container>
+        </div>
+
+        <!-- Metric 2: Credit Cards Portfolio -->
+        <div class="col-12 col-sm-6 col-xl-4">
+          <app-card-container [borderAccent]="true">
+            <div class="metric-card d-flex flex-column gap-1">
+              <div class="d-flex justify-content-between align-items-center">
+                <span class="metric-label text-uppercase fw-semibold">Cards Issued</span>
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
+                  {{ staffStats.activeCards }} Active
+                </span>
+              </div>
+              <div class="metric-value-row d-flex align-items-center justify-content-between my-2">
+                <span class="metric-value fs-3 fw-bold text-dark">{{ staffStats.totalCards }}</span>
+                <a routerLink="/app/cards" class="btn btn-outline-primary btn-sm py-1 px-2">Manage Cards &rarr;</a>
+              </div>
+              <p class="metric-desc text-secondary mb-0 small">
+                {{ staffStats.inactiveCards }} Inactive &bull; {{ staffStats.blockedCards }} Blocked
+              </p>
+            </div>
+          </app-card-container>
+        </div>
+
+        <!-- Metric 3: Settled Volume -->
+        <div class="col-12 col-sm-6 col-xl-4">
+          <app-card-container [borderAccent]="true">
+            <div class="metric-card d-flex flex-column gap-1">
+              <div class="d-flex justify-content-between align-items-center">
+                <span class="metric-label text-uppercase fw-semibold">Transaction Volume</span>
+                <span class="badge bg-success-subtle text-success border border-success-subtle">
+                  {{ staffStats.totalTransactions }} Total
+                </span>
+              </div>
+              <div class="metric-value-row d-flex align-items-center justify-content-between my-2">
+                <span class="metric-value fs-3 fw-bold text-dark">{{ staffStats.totalSettledVolume | currency:'INR':'symbol':'1.0-0' }}</span>
+                <a routerLink="/app/transactions" class="btn btn-outline-primary btn-sm py-1 px-2">Full Ledger &rarr;</a>
+              </div>
+              <p class="metric-desc text-secondary mb-0 small">Settled purchases and payments volume</p>
+            </div>
+          </app-card-container>
+        </div>
+
+        <!-- Metric 4: Active EMI Portfolio -->
+        <div class="col-12 col-sm-6 col-xl-4">
+          <app-card-container [borderAccent]="false">
+            <div class="metric-card d-flex flex-column gap-1">
+              <div class="d-flex justify-content-between align-items-center">
+                <span class="metric-label text-uppercase fw-semibold">Active EMIs</span>
+                <span class="badge bg-info-subtle text-info border border-info-subtle">
+                  {{ staffStats.activeEmis }} Active
+                </span>
+              </div>
+              <div class="metric-value-row d-flex align-items-center justify-content-between my-2">
+                <span class="metric-value fs-3 fw-bold text-dark">{{ staffStats.totalEmiOutstanding | currency:'INR':'symbol':'1.0-0' }}</span>
+                <a routerLink="/app/emi" class="btn btn-outline-primary btn-sm py-1 px-2">EMI Queue &rarr;</a>
+              </div>
+              <p class="metric-desc text-secondary mb-0 small">Outstanding installment balance</p>
+            </div>
+          </app-card-container>
+        </div>
+
+        <!-- Metric 5: Fraud Telemetry -->
+        <div class="col-12 col-sm-6 col-xl-4">
+          <app-card-container [borderAccent]="false">
+            <div class="metric-card d-flex flex-column gap-1">
+              <div class="d-flex justify-content-between align-items-center">
+                <span class="metric-label text-uppercase fw-semibold">Fraud Alerts</span>
+                <span class="badge" [ngClass]="staffStats.activeFraudAlerts > 0 ? 'bg-danger-subtle text-danger border border-danger-subtle' : 'bg-success-subtle text-success border border-success-subtle'">
+                  {{ staffStats.activeFraudAlerts > 0 ? 'Action Required' : 'Clean' }}
+                </span>
+              </div>
+              <div class="metric-value-row d-flex align-items-center justify-content-between my-2">
+                <span class="metric-value fs-3 fw-bold" [class.text-danger]="staffStats.activeFraudAlerts > 0">{{ staffStats.activeFraudAlerts }}</span>
+                <a routerLink="/app/fraud" class="btn btn-outline-danger btn-sm py-1 px-2">Inspect Alerts &rarr;</a>
+              </div>
+              <p class="metric-desc text-secondary mb-0 small">Pending &amp; under-investigation flags</p>
+            </div>
+          </app-card-container>
+        </div>
+
+        <!-- Metric 6: Customer Disputes -->
+        <div class="col-12 col-sm-6 col-xl-4">
+          <app-card-container [borderAccent]="false">
+            <div class="metric-card d-flex flex-column gap-1">
+              <div class="d-flex justify-content-between align-items-center">
+                <span class="metric-label text-uppercase fw-semibold">Dispute Cases</span>
+                <span class="badge" [ngClass]="staffStats.openDisputes > 0 ? 'bg-warning-subtle text-warning border border-warning-subtle' : 'bg-success-subtle text-success border border-success-subtle'">
+                  {{ staffStats.openDisputes }} Open
+                </span>
+              </div>
+              <div class="metric-value-row d-flex align-items-center justify-content-between my-2">
+                <span class="metric-value fs-3 fw-bold text-dark">{{ staffStats.openDisputes }}</span>
+                <a routerLink="/app/disputes" class="btn btn-outline-warning btn-sm py-1 px-2">Resolve Cases &rarr;</a>
+              </div>
+              <p class="metric-desc text-secondary mb-0 small">Unresolved cardholder claims</p>
+            </div>
+          </app-card-container>
+        </div>
+      </div>
+
+      <!-- Live Activity Grid -->
+      <div class="row g-4 mb-4">
+        <!-- Recent Transactions Column -->
+        <div class="col-12 col-xl-7">
+          <app-card-container title="Recent System Authorizations" subtitle="Latest card transactions processed across the banking network">
+            <div class="table-responsive" *ngIf="staffRecentTransactions.length > 0">
+              <table class="table align-middle table-hover mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Date</th>
+                    <th>Transaction ID</th>
+                    <th>Card Ref</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th class="text-end">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let txn of staffRecentTransactions">
+                    <td class="text-nowrap small">
+                      <span class="fw-medium">{{ txn.transactionDate | date:'shortDate' }}</span>
+                      <small class="text-muted d-block">{{ txn.transactionDate | date:'shortTime' }}</small>
+                    </td>
+                    <td class="font-monospace small text-secondary">{{ txn.transactionId }}</td>
+                    <td class="font-monospace small text-muted">
+                      {{ staffCardsMap.get(txn.cardId) ? (staffCardsMap.get(txn.cardId) | maskCard) : txn.cardId }}
+                    </td>
+                    <td>
+                      <span class="fw-semibold small">{{ txn.transactionType }}</span>
+                    </td>
+                    <td>
+                      <span class="badge" [ngClass]="getTransactionStatusBadge(txn.transactionStatus)">
+                        {{ txn.transactionStatus }}
+                      </span>
+                    </td>
+                    <td class="text-end fw-bold font-monospace small">
+                      {{ txn.amount | currency:txn.currency:'symbol':'1.2-2' }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div *ngIf="staffRecentTransactions.length === 0" class="py-4">
+              <app-empty-state
+                title="No Recent Authorizations"
+                message="No recent card transactions recorded in the system.">
+              </app-empty-state>
+            </div>
+
+            <div class="mt-3 pt-3 border-top text-end" *ngIf="staffRecentTransactions.length > 0">
+              <a routerLink="/app/transactions" class="btn btn-outline-primary btn-sm">
+                View All Transactions &rarr;
+              </a>
+            </div>
+          </app-card-container>
+        </div>
+
+        <!-- Recent Audit Events Column -->
+        <div class="col-12 col-xl-5">
+          <app-card-container title="Security &amp; Audit Trail" subtitle="Recent regulatory compliance and governance records">
+            <div class="table-responsive" *ngIf="staffRecentAuditLogs.length > 0">
+              <table class="table align-middle table-hover mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Timestamp</th>
+                    <th>Entity</th>
+                    <th>Action</th>
+                    <th>User ID</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let log of staffRecentAuditLogs">
+                    <td class="text-nowrap small text-muted">
+                      {{ log.timestamp | date:'short' }}
+                    </td>
+                    <td>
+                      <span class="badge bg-secondary-subtle text-dark border small">{{ log.entityType }}</span>
+                    </td>
+                    <td class="small fw-semibold">{{ log.action }}</td>
+                    <td class="font-monospace small text-muted">{{ log.performedByUserId }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div *ngIf="staffRecentAuditLogs.length === 0" class="py-4">
+              <app-empty-state
+                title="No Audit Logs"
+                message="No audit trail events found.">
+              </app-empty-state>
+            </div>
+
+            <div class="mt-3 pt-3 border-top text-end" *ngIf="staffRecentAuditLogs.length > 0">
+              <a routerLink="/app/admin/audit-logs" class="btn btn-outline-secondary btn-sm">
+                Open Audit Log Viewer &rarr;
+              </a>
+            </div>
+          </app-card-container>
+        </div>
+      </div>
+
+      <!-- Quick Platform Governance / Branch Operations Navigation -->
+      <app-card-container [title]="isBankOfficer ? 'Branch Operational Workflows' : 'Platform Governance & Administration'" [subtitle]="isBankOfficer ? 'Direct access to branch operations, customer files, and ledger management' : 'Quick access to core enterprise management modules'">
+        <div class="row g-3" *ngIf="!isBankOfficer">
+          <div class="col-6 col-md-4 col-xl-2">
+            <a routerLink="/app/customer" class="btn btn-outline-secondary w-100 py-3 d-flex flex-column align-items-center justify-content-center gap-2 text-decoration-none">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+              </svg>
+              <span class="small fw-bold">Customer Directory</span>
+            </a>
+          </div>
+
+          <div class="col-6 col-md-4 col-xl-2">
+            <a routerLink="/app/kyc" class="btn btn-outline-secondary w-100 py-3 d-flex flex-column align-items-center justify-content-center gap-2 text-decoration-none">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              </svg>
+              <span class="small fw-bold">KYC Review</span>
+            </a>
+          </div>
+
+          <div class="col-6 col-md-4 col-xl-2">
+            <a routerLink="/app/cards" class="btn btn-outline-secondary w-100 py-3 d-flex flex-column align-items-center justify-content-center gap-2 text-decoration-none">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                <line x1="1" y1="10" x2="23" y2="10"></line>
+              </svg>
+              <span class="small fw-bold">Card Inventory</span>
+            </a>
+          </div>
+
+          <div class="col-6 col-md-4 col-xl-2">
+            <a routerLink="/app/admin/staff" class="btn btn-outline-secondary w-100 py-3 d-flex flex-column align-items-center justify-content-center gap-2 text-decoration-none">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
+              <span class="small fw-bold">Staff Directory</span>
+            </a>
+          </div>
+
+          <div class="col-6 col-md-4 col-xl-2">
+            <a routerLink="/app/fraud" class="btn btn-outline-secondary w-100 py-3 d-flex flex-column align-items-center justify-content-center gap-2 text-decoration-none">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                <line x1="12" y1="9" x2="12" y2="13"></line>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+              </svg>
+              <span class="small fw-bold">Fraud Monitoring</span>
+            </a>
+          </div>
+
+          <div class="col-6 col-md-4 col-xl-2">
+            <a routerLink="/app/reports" class="btn btn-outline-secondary w-100 py-3 d-flex flex-column align-items-center justify-content-center gap-2 text-decoration-none">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="20" x2="18" y2="10"></line>
+                <line x1="12" y1="20" x2="12" y2="4"></line>
+                <line x1="6" y1="20" x2="6" y2="14"></line>
+              </svg>
+              <span class="small fw-bold">Financial Reports</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Bank Officer Workflow Links -->
+        <div class="row g-3" *ngIf="isBankOfficer">
+          <div class="col-6 col-md-4 col-xl-2">
+            <a routerLink="/app/customer" class="btn btn-outline-secondary w-100 py-3 d-flex flex-column align-items-center justify-content-center gap-2 text-decoration-none">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+              </svg>
+              <span class="small fw-bold">Customer Portfolio</span>
+            </a>
+          </div>
+
+          <div class="col-6 col-md-4 col-xl-2">
+            <a routerLink="/app/kyc" class="btn btn-outline-secondary w-100 py-3 d-flex flex-column align-items-center justify-content-center gap-2 text-decoration-none">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              </svg>
+              <span class="small fw-bold">KYC Review Queue</span>
+            </a>
+          </div>
+
+          <div class="col-6 col-md-4 col-xl-2">
+            <a routerLink="/app/cards" class="btn btn-outline-secondary w-100 py-3 d-flex flex-column align-items-center justify-content-center gap-2 text-decoration-none">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                <line x1="1" y1="10" x2="23" y2="10"></line>
+              </svg>
+              <span class="small fw-bold">Card Inventory</span>
+            </a>
+          </div>
+
+          <div class="col-6 col-md-4 col-xl-2">
+            <a routerLink="/app/transactions" class="btn btn-outline-secondary w-100 py-3 d-flex flex-column align-items-center justify-content-center gap-2 text-decoration-none">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                <line x1="12" y1="22.08" x2="12" y2="12"></line>
+              </svg>
+              <span class="small fw-bold">Transaction Ledger</span>
+            </a>
+          </div>
+
+          <div class="col-6 col-md-4 col-xl-2">
+            <a routerLink="/app/payments" class="btn btn-outline-secondary w-100 py-3 d-flex flex-column align-items-center justify-content-center gap-2 text-decoration-none">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="1" x2="12" y2="23"></line>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+              </svg>
+              <span class="small fw-bold">Payments Ledger</span>
+            </a>
+          </div>
+
+          <div class="col-6 col-md-4 col-xl-2">
+            <a routerLink="/app/reports" class="btn btn-outline-secondary w-100 py-3 d-flex flex-column align-items-center justify-content-center gap-2 text-decoration-none">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="20" x2="18" y2="10"></line>
+                <line x1="12" y1="20" x2="12" y2="4"></line>
+                <line x1="6" y1="20" x2="6" y2="14"></line>
+              </svg>
+              <span class="small fw-bold">Portfolio Reports</span>
+            </a>
+          </div>
+        </div>
       </app-card-container>
-    </div>
+    </ng-template>
   </ng-template>
+  </div>
+</ng-template>
 </div>
