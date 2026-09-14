@@ -1,16 +1,342 @@
-﻿<div class="emi-feature">
+<div class="emi-feature container-fluid px-0">
   <app-page-header
-    title="EMI & Loan Management"
-    subtitle="Eligible transaction conversions, amortization schedules, and interest rates."
+    title="EMI &amp; Installment Management"
+    subtitle="Convert high-value card purchases into affordable monthly installments with AI-recommended tenures."
     badgeText="Financing">
+    <div header-actions>
+      <button type="button" class="btn btn-secondary btn-sm d-inline-flex align-items-center gap-2" (click)="loadData(true)" [disabled]="isLoading">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+        </svg>
+        Refresh
+      </button>
+    </div>
   </app-page-header>
 
-  <app-card-container [borderAccent]="true" title="EMI & Loan Management Overview">
-    <app-empty-state
-      title="EMI & Loan Management Module Ready"
-      message="This foundation module is established and routing is operational. Integration with Spring Boot backend services will occur in subsequent phases."
-      actionLabel="View Dashboard"
-      (actionClicked)="false">
-    </app-empty-state>
-  </app-card-container>
+  <!-- Success Notification -->
+  <div *ngIf="successMessage" class="alert alert-success alert-dismissible fade show my-3" role="alert">
+    <strong>Success!</strong> {{ successMessage }}
+    <button type="button" class="btn-close" (click)="successMessage = null" aria-label="Close"></button>
+  </div>
+
+  <!-- Summary Metrics Bar -->
+  <div class="row g-3 g-md-4 mb-4" *ngIf="!isLoading && !errorMessage">
+    <div class="col-12 col-sm-4">
+      <app-card-container [borderAccent]="true">
+        <div class="metric-card d-flex flex-column gap-1">
+          <span class="metric-label text-uppercase fw-semibold">Active EMI Plans</span>
+          <div class="metric-value-row d-flex align-items-center justify-content-between my-2">
+            <span class="metric-value fs-4 fw-bold">{{ activePlansCount }}</span>
+            <span class="badge" [ngClass]="activePlansCount > 0 ? 'bg-primary-subtle text-primary border border-primary-subtle' : 'bg-light text-muted border'">
+              {{ activePlansCount === 1 ? '1 Active' : activePlansCount + ' Active' }}
+            </span>
+          </div>
+          <p class="metric-desc text-secondary mb-0">Running installment plans</p>
+        </div>
+      </app-card-container>
+    </div>
+
+    <div class="col-12 col-sm-4">
+      <app-card-container [borderAccent]="false">
+        <div class="metric-card d-flex flex-column gap-1">
+          <span class="metric-label text-uppercase fw-semibold">Outstanding EMI Balance</span>
+          <div class="metric-value-row d-flex align-items-center justify-content-between my-2">
+            <span class="metric-value fs-4 fw-bold">{{ totalOutstandingEmi | currency:'INR':'symbol':'1.0-0' }}</span>
+            <span class="badge bg-warning-subtle text-warning border border-warning-subtle">Principal + Int.</span>
+          </div>
+          <p class="metric-desc text-secondary mb-0">Remaining total repayment volume</p>
+        </div>
+      </app-card-container>
+    </div>
+
+    <div class="col-12 col-sm-4">
+      <app-card-container [borderAccent]="false">
+        <div class="metric-card d-flex flex-column gap-1">
+          <span class="metric-label text-uppercase fw-semibold">Upcoming Monthly EMI</span>
+          <div class="metric-value-row d-flex align-items-center justify-content-between my-2">
+            <span class="metric-value fs-4 fw-bold text-success">{{ nextMonthEmiDue | currency:'INR':'symbol':'1.0-0' }}</span>
+            <span class="badge bg-success-subtle text-success border border-success-subtle">Per Month</span>
+          </div>
+          <p class="metric-desc text-secondary mb-0">Aggregated monthly debit</p>
+        </div>
+      </app-card-container>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div class="my-4" *ngIf="isLoading">
+    <app-loading-spinner message="Loading EMI information..."></app-loading-spinner>
+  </div>
+
+  <!-- Error State -->
+  <div class="my-4" *ngIf="errorMessage && !isLoading">
+    <app-error-state
+      title="Unable to Load EMI Details"
+      [message]="errorMessage"
+      (retry)="loadData(true)">
+    </app-error-state>
+  </div>
+
+  <!-- Navigation Tabs -->
+  <div *ngIf="!isLoading && !errorMessage">
+    <ul class="nav nav-tabs mb-4">
+      <li class="nav-item">
+        <button
+          type="button"
+          class="nav-link d-flex align-items-center gap-2"
+          [class.active]="activeTab === 'plans'"
+          (click)="activeTab = 'plans'">
+          <span>Active Plans</span>
+          <span class="badge bg-secondary-subtle text-secondary rounded-pill small">{{ emiPlans.length }}</span>
+        </button>
+      </li>
+      <li class="nav-item">
+        <button
+          type="button"
+          class="nav-link d-flex align-items-center gap-2"
+          [class.active]="activeTab === 'eligible'"
+          (click)="activeTab = 'eligible'">
+          <span>Convert Purchases to EMI</span>
+          <span class="badge bg-primary-subtle text-primary rounded-pill small">{{ eligibleTransactions.length }}</span>
+        </button>
+      </li>
+    </ul>
+
+    <!-- Tab 1: Active Plans -->
+    <div *ngIf="activeTab === 'plans'">
+      <app-card-container title="EMI Installment Plans" subtitle="Current and completed conversion schedules">
+        <div *ngIf="emiPlans.length === 0" class="py-4">
+          <app-empty-state
+            title="No EMI Plans Active"
+            message="You currently have no active EMI conversion plans. High-value purchases of ₹3,000 or more can be converted into manageable monthly installments."
+            actionLabel="View Eligible Purchases"
+            (actionClicked)="activeTab = 'eligible'">
+          </app-empty-state>
+        </div>
+
+        <div *ngIf="emiPlans.length > 0" class="table-responsive">
+          <table class="table align-middle table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th scope="col">Plan ID</th>
+                <th scope="col">Original Principal</th>
+                <th scope="col">Tenure &amp; Rate</th>
+                <th scope="col">Monthly EMI</th>
+                <th scope="col">Remaining Balance</th>
+                <th scope="col">Next Due</th>
+                <th scope="col">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let plan of emiPlans">
+                <td>
+                  <span class="font-monospace fw-bold">{{ plan.emiPlanId }}</span>
+                  <div class="text-muted small font-monospace">Txn: {{ plan.transactionId }}</div>
+                </td>
+                <td class="fw-semibold">
+                  {{ plan.principal | currency:'INR':'symbol':'1.0-0' }}
+                </td>
+                <td>
+                  <span class="fw-bold">{{ plan.tenureMonths }} Months</span>
+                  <div class="text-muted small">{{ plan.interestRate }}% APR</div>
+                </td>
+                <td class="fw-bold font-monospace text-primary">
+                  {{ plan.emiAmount | currency:'INR':'symbol':'1.2-2' }}
+                </td>
+                <td class="font-monospace">
+                  {{ plan.outstandingAmount | currency:'INR':'symbol':'1.0-0' }}
+                </td>
+                <td>
+                  <span *ngIf="plan.nextDueDate">{{ plan.nextDueDate | date:'mediumDate' }}</span>
+                  <span *ngIf="!plan.nextDueDate" class="text-muted small">—</span>
+                </td>
+                <td>
+                  <span class="badge" [ngClass]="getEmiStatusBadge(plan.status)">
+                    {{ plan.status }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </app-card-container>
+    </div>
+
+    <!-- Tab 2: Eligible Transactions -->
+    <div *ngIf="activeTab === 'eligible'">
+      <app-card-container title="Eligible Purchases for EMI" subtitle="Card transactions of ₹3,000 or more qualifying for installment conversion">
+        <div *ngIf="eligibleTransactions.length === 0" class="py-4">
+          <app-empty-state
+            title="No Eligible Transactions"
+            message="No recent purchases qualify for EMI conversion at this time. Only completed transactions of ₹3,000 or greater are eligible.">
+          </app-empty-state>
+        </div>
+
+        <div *ngIf="eligibleTransactions.length > 0" class="table-responsive">
+          <table class="table align-middle table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th scope="col">Date</th>
+                <th scope="col">Transaction ID</th>
+                <th scope="col">Type &amp; Location</th>
+                <th scope="col" class="text-end">Amount</th>
+                <th scope="col" class="text-center">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let txn of eligibleTransactions">
+                <td class="text-nowrap">
+                  <div class="fw-medium">{{ txn.transactionDate | date:'mediumDate' }}</div>
+                  <small class="text-muted">{{ txn.transactionDate | date:'shortTime' }}</small>
+                </td>
+                <td class="font-monospace small text-secondary">
+                  {{ txn.transactionId }}
+                </td>
+                <td>
+                  <span class="fw-semibold">{{ txn.transactionType }}</span>
+                  <div class="text-muted small" *ngIf="txn.transactionLocation">{{ txn.transactionLocation }}</div>
+                </td>
+                <td class="text-end fw-bold font-monospace fs-6">
+                  {{ txn.amount | currency:txn.currency:'symbol':'1.2-2' }}
+                </td>
+                <td class="text-center">
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1 px-3"
+                    (click)="openConversionModal(txn)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                    </svg>
+                    Convert with AI
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </app-card-container>
+    </div>
+  </div>
 </div>
+
+<!-- AI EMI Recommendation & Conversion Modal -->
+<ng-template #emiModal let-modal>
+  <div class="modal-header border-bottom">
+    <div class="d-flex align-items-center gap-2">
+      <span class="badge bg-primary-subtle text-primary border border-primary-subtle p-2 rounded-circle">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+        </svg>
+      </span>
+      <div>
+        <h5 class="modal-title m-0 fw-bold">Convert Purchase to EMI</h5>
+        <small class="text-muted">CardNest AI-Powered Installment Planner</small>
+      </div>
+    </div>
+    <button type="button" class="btn-close" (click)="dismissModal()" aria-label="Close"></button>
+  </div>
+
+  <div class="modal-body">
+    <!-- Loading AI recommendation -->
+    <div *ngIf="isLoadingRecommendation" class="py-4 text-center">
+      <div class="spinner-border text-primary mb-2" role="status"></div>
+      <p class="text-secondary small mb-0">Analyzing transaction &amp; formulating AI recommendation...</p>
+    </div>
+
+    <!-- Error state -->
+    <div *ngIf="modalErrorMessage" class="alert alert-danger py-2 px-3 small mb-3">
+      {{ modalErrorMessage }}
+    </div>
+
+    <!-- Recommendation Content -->
+    <div *ngIf="!isLoadingRecommendation && recommendation">
+      <!-- Purchase Summary -->
+      <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded-3 mb-3">
+        <div>
+          <span class="text-muted small d-block">Transaction Amount</span>
+          <span class="fs-4 fw-bold font-monospace text-dark">{{ recommendation.transactionAmount | currency:'INR':'symbol':'1.2-2' }}</span>
+        </div>
+        <div class="text-end">
+          <span class="text-muted small d-block">Transaction ID</span>
+          <span class="font-monospace text-secondary small">{{ recommendation.transactionId }}</span>
+        </div>
+      </div>
+
+      <!-- AI Advisor Box -->
+      <div class="ai-recommendation-box p-3 mb-4">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <span class="badge bg-primary text-white">CardNest AI</span>
+          <strong class="text-dark small">Personalized Recommendation</strong>
+        </div>
+        <p class="text-secondary small mb-2">
+          {{ recommendation.recommendationReason }}
+        </p>
+        <div class="small fw-semibold text-primary">
+          Suggested Plan: <strong>{{ recommendation.recommendedTenureMonths }} Months</strong> at {{ recommendation.recommendedEmiAmount | currency:'INR':'symbol':'1.2-2' }}/mo
+        </div>
+      </div>
+
+      <!-- Tenure Selection Options -->
+      <label class="form-label fw-semibold small text-uppercase text-muted mb-2">Select Preferred Tenure</label>
+      <div class="row g-2 mb-4">
+        <div class="col-6 col-sm-4" *ngFor="let opt of recommendation.availableOptions">
+          <div
+            class="tenure-option-card p-3 d-flex flex-column gap-1"
+            [class.selected]="selectedOption?.tenureMonths === opt.tenureMonths"
+            (click)="selectOption(opt)">
+            <div class="d-flex justify-content-between align-items-center">
+              <strong class="fs-6">{{ opt.tenureMonths }} Months</strong>
+              <span *ngIf="opt.tenureMonths === recommendation.recommendedTenureMonths" class="badge bg-success-subtle text-success border border-success-subtle small">
+                AI Pick
+              </span>
+            </div>
+            <div class="fs-5 fw-bold font-monospace text-primary">
+              {{ opt.monthlyEmi | currency:'INR':'symbol':'1.0-0' }}<small class="fs-6 text-muted">/mo</small>
+            </div>
+            <div class="small text-muted" style="font-size: 11px;">
+              Total: {{ opt.totalPayable | currency:'INR':'symbol':'1.0-0' }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Breakdown of Selected Plan -->
+      <div *ngIf="selectedOption" class="p-3 border rounded-3 bg-white">
+        <h6 class="fw-bold mb-3 border-bottom pb-2">Plan Summary &amp; Fee Breakdown</h6>
+        <div class="row g-2 small">
+          <div class="col-6 text-muted">Monthly Installment:</div>
+          <div class="col-6 text-end fw-bold font-monospace">{{ selectedOption.monthlyEmi | currency:'INR':'symbol':'1.2-2' }}</div>
+
+          <div class="col-6 text-muted">Tenure Duration:</div>
+          <div class="col-6 text-end fw-medium">{{ selectedOption.tenureMonths }} Months</div>
+
+          <div class="col-6 text-muted">Total Interest Charged:</div>
+          <div class="col-6 text-end font-monospace">{{ selectedOption.totalInterest | currency:'INR':'symbol':'1.2-2' }}</div>
+
+          <div class="col-6 text-muted">One-Time Processing Fee:</div>
+          <div class="col-6 text-end font-monospace">{{ (selectedOption.processingFee || recommendation.processingFee || 100) | currency:'INR':'symbol':'1.2-2' }}</div>
+
+          <div class="col-6 text-dark fw-bold border-top pt-2">Total Repayment:</div>
+          <div class="col-6 text-end fw-bold font-monospace fs-6 text-primary border-top pt-2">
+            {{ selectedOption.totalPayable | currency:'INR':'symbol':'1.2-2' }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-footer border-top">
+    <button type="button" class="btn btn-secondary" (click)="dismissModal()" [disabled]="isSubmittingPlan">
+      Cancel
+    </button>
+    <button
+      type="button"
+      class="btn btn-primary d-inline-flex align-items-center gap-2"
+      (click)="confirmCreatePlan()"
+      [disabled]="isSubmittingPlan || !selectedOption || isLoadingRecommendation">
+      <span *ngIf="isSubmittingPlan" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+      {{ isSubmittingPlan ? 'Submitting Plan...' : 'Confirm & Convert to EMI' }}
+    </button>
+  </div>
+</ng-template>

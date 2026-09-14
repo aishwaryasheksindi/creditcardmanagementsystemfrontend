@@ -1,4 +1,4 @@
-﻿<div class="auth-page-container d-flex align-items-center justify-content-center min-vh-100 p-3 p-md-4">
+<div class="auth-page-container d-flex align-items-center justify-content-center min-vh-100 p-3 p-md-4">
   <div class="auth-card card-surface p-4 p-md-5 d-flex flex-column gap-4">
     <!-- Brand Header -->
     <div class="auth-brand d-flex flex-column align-items-center text-center">
@@ -56,7 +56,10 @@
 
       <!-- Password Field -->
       <div class="form-group mb-0">
-        <label class="form-label" for="password">Password</label>
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <label class="form-label mb-0" for="password">Password</label>
+          <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none text-muted" (click)="openForgotPasswordModal()">Forgot password?</button>
+        </div>
         <input
           id="password"
           type="password"
@@ -79,11 +82,49 @@
         <span *ngIf="isLoading" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
         <span>{{ isLoading ? 'Authenticating...' : 'Sign In to CardNest' }}</span>
       </button>
+
+      <!-- Customer Registration Link -->
+      <div class="text-center mt-2">
+        <span class="text-muted small">New to CardNest? </span>
+        <a routerLink="/login/register" class="fw-semibold text-primary small text-decoration-none">Register as Customer</a>
+      </div>
     </form>
 
     <!-- Footer Note -->
     <div class="auth-footer text-center pt-3 border-top">
       <span class="text-muted small">&copy; 2026 CardNest &bull; Enterprise Banking Security</span>
+    </div>
+  </div>
+
+  <!-- Forgot Password Modal -->
+  <div *ngIf="showForgotPasswordModal" class="modal-backdrop-custom d-flex align-items-center justify-content-center p-3" (click)="closeForgotPasswordModal()">
+    <div class="modal-card card-surface p-4 shadow-lg rounded-3" (click)="$event.stopPropagation()" style="max-width: 460px; width: 100%;">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge bg-warning-subtle text-warning border border-warning-subtle p-2 rounded-circle">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+          </span>
+          <h5 class="m-0 fw-bold">Password Reset Assistance</h5>
+        </div>
+        <button type="button" class="btn-close" (click)="closeForgotPasswordModal()" aria-label="Close"></button>
+      </div>
+
+      <p class="text-secondary small mb-3">
+        For your financial security and regulatory compliance, automated online password resets are disabled.
+      </p>
+
+      <div class="alert alert-info py-2 px-3 small d-flex flex-column gap-2 mb-3">
+        <div class="fw-bold">How to regain access to your account:</div>
+        <div><strong>1. In-Person at Branch:</strong> Visit any registered CardNest branch with your government-issued photo ID (PAN / Aadhaar / Passport).</div>
+        <div><strong>2. 24x7 Customer Care:</strong> Call toll-free at <strong>1800-CARD-NEST</strong> (1800-227-36378) to verify your identity with a representative.</div>
+      </div>
+
+      <button type="button" class="btn btn-secondary w-100" (click)="closeForgotPasswordModal()">
+        Got It
+      </button>
     </div>
   </div>
 </div>

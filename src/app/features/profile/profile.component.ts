@@ -1,17 +1,10 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
-import { AbstractControl, FormBuilder, FormGroup, ValidationErrors, Validators } from '@angular/forms';
-import { Subscription } from 'rxjs';
+import { Component, OnInit, NgZone, ChangeDetectorRef } from '@angular/core';
+import { Router } from '@angular/router';
 import { ProfileService } from '../../core/services/profile.service';
-import { UserProfile, UpdateProfileRequest, ChangePasswordRequest } from '../../core/models/user-profile.model';
-
-function passwordMatchValidator(control: AbstractControl): ValidationErrors | null {
-  const newPassword = control.get('newPassword')?.value;
-  const confirmNewPassword = control.get('confirmNewPassword')?.value;
-  if (!confirmNewPassword) {
-    return null;
-  }
-  return newPassword === confirmNewPassword ? null : { passwordMismatch: true };
-}
+import { CustomerService } from '../../core/services/customer.service';
+import { AuthService } from '../../core/services/auth.service';
+import { Customer } from '../../core/models/customer.model';
+import { UserProfile } from '../../core/models/user-profile.model';
 
 @Component({
   selector: 'app-profile',
@@ -19,199 +12,98 @@ function passwordMatchValidator(control: AbstractControl): ValidationErrors | nu
   styleUrls: ['./profile.component.scss'],
   standalone: false
 })
-export class ProfileComponent implements OnInit, OnDestroy {
-  profile: UserProfile | null = null;
-  isLoadingProfile: boolean = false;
-  profileErrorMessage: string | null = null;
-
-  editDetailsForm!: FormGroup;
-  isUpdatingDetails: boolean = false;
-  detailsSuccessMessage: string | null = null;
-  detailsErrorMessage: string | null = null;
-
-  passwordForm!: FormGroup;
-  isChangingPassword: boolean = false;
-  passwordSuccessMessage: string | null = null;
-  passwordErrorMessage: string | null = null;
-
-  private profileSub?: Subscription;
+export class ProfileComponent implements OnInit {
+  customer: Customer | null = null;
+  userProfile: UserProfile | null = null;
+  isLoading: boolean = false;
+  errorMessage: string | null = null;
+  isCustomer: boolean = false;
 
   constructor(
-    public profileService: ProfileService,
-    private fb: FormBuilder
+    public authService: AuthService,
+    private customerService: CustomerService,
+    private profileService: ProfileService,
+    private router: Router,
+    private ngZone: NgZone,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
-    this.initForms();
+    this.isCustomer = this.authService.hasRole('CUSTOMER');
+    this.loadProfile(true);
+  }
 
-    // Check if navbar already loaded profile
-    const cachedProfile = this.profileService.currentProfile;
-    if (cachedProfile) {
-      this.setProfile(cachedProfile);
+  loadProfile(forceRefresh: boolean = false): void {
+    this.isLoading = true;
+    this.errorMessage = null;
+
+    if (this.isCustomer) {
+      this.customerService.getMyProfile(forceRefresh).subscribe({
+        next: (customer) => {
+          this.ngZone.run(() => {
+            this.customer = customer;
+            this.isLoading = false;
+            this.cdr.markForCheck();
+          });
+        },
+        error: (err) => {
+          this.ngZone.run(() => {
+            this.isLoading = false;
+            if (err.status === 404) {
+              this.errorMessage = 'No customer profile record found for your account.';
+            } else {
+              this.errorMessage = 'Failed to load customer profile details. Please try again.';
+            }
+            this.cdr.markForCheck();
+          });
+        }
+      });
     } else {
-      this.loadProfile();
+      this.profileService.loadMyProfile().subscribe({
+        next: (profile) => {
+          this.ngZone.run(() => {
+            this.userProfile = profile;
+            this.isLoading = false;
+            this.cdr.markForCheck();
+          });
+        },
+        error: () => {
+          this.ngZone.run(() => {
+            this.isLoading = false;
+            this.errorMessage = 'Failed to load staff profile details.';
+            this.cdr.markForCheck();
+          });
+        }
+      });
     }
-
-    // Subscribe to profile updates to keep views synchronized
-    this.profileSub = this.profileService.profile$.subscribe((p) => {
-      if (p) {
-        this.setProfile(p);
-      }
-    });
   }
 
-  ngOnDestroy(): void {
-    if (this.profileSub) {
-      this.profileSub.unsubscribe();
+  goToEditProfile(): void {
+    this.router.navigate(['/app/profile/edit']);
+  }
+
+  getKycBadgeClass(status?: string): string {
+    switch (status?.toUpperCase()) {
+      case 'VERIFIED':
+        return 'bg-success text-white';
+      case 'PENDING':
+        return 'bg-warning text-dark';
+      case 'REJECTED':
+        return 'bg-danger text-white';
+      default:
+        return 'bg-secondary text-white';
     }
   }
 
-  private initForms(): void {
-    this.editDetailsForm = this.fb.group({
-      email: ['', [Validators.required, Validators.email]],
-      phoneNumber: ['', [Validators.maxLength(20)]]
-    });
-
-    this.passwordForm = this.fb.group(
-      {
-        currentPassword: ['', [Validators.required]],
-        newPassword: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(100)]],
-        confirmNewPassword: ['', [Validators.required]]
-      },
-      { validators: passwordMatchValidator }
-    );
-  }
-
-  loadProfile(): void {
-    this.isLoadingProfile = true;
-    this.profileErrorMessage = null;
-
-    this.profileService.loadMyProfile().subscribe({
-      next: (profile) => {
-        this.isLoadingProfile = false;
-        this.setProfile(profile);
-      },
-      error: (error) => {
-        this.isLoadingProfile = false;
-        this.profileErrorMessage = this.parseBackendError(error);
-      }
-    });
-  }
-
-  private setProfile(profile: UserProfile): void {
-    this.profile = profile;
-    this.editDetailsForm.patchValue({
-      email: profile.email || '',
-      phoneNumber: profile.phoneNumber || ''
-    });
-    this.editDetailsForm.markAsPristine();
-  }
-
-  onUpdateDetails(): void {
-    if (this.editDetailsForm.invalid) {
-      this.editDetailsForm.markAllAsTouched();
-      return;
+  getStatusBadgeClass(status?: string): string {
+    switch (status?.toUpperCase()) {
+      case 'ACTIVE':
+        return 'bg-success-subtle text-success border border-success-subtle';
+      case 'INACTIVE':
+      case 'SUSPENDED':
+        return 'bg-danger-subtle text-danger border border-danger-subtle';
+      default:
+        return 'bg-secondary-subtle text-secondary border';
     }
-
-    this.isUpdatingDetails = true;
-    this.detailsSuccessMessage = null;
-    this.detailsErrorMessage = null;
-
-    const request: UpdateProfileRequest = {
-      email: this.editDetailsForm.value.email?.trim(),
-      phoneNumber: this.editDetailsForm.value.phoneNumber?.trim() || ''
-    };
-
-    this.profileService.updateMyProfile(request).subscribe({
-      next: (updatedProfile) => {
-        this.isUpdatingDetails = false;
-        this.detailsSuccessMessage = 'Contact information updated successfully.';
-        this.setProfile(updatedProfile);
-      },
-      error: (error) => {
-        this.isUpdatingDetails = false;
-        this.detailsErrorMessage = this.parseBackendError(error);
-      }
-    });
-  }
-
-  onChangePassword(): void {
-    if (this.passwordForm.invalid) {
-      this.passwordForm.markAllAsTouched();
-      return;
-    }
-
-    this.isChangingPassword = true;
-    this.passwordSuccessMessage = null;
-    this.passwordErrorMessage = null;
-
-    const request: ChangePasswordRequest = {
-      currentPassword: this.passwordForm.value.currentPassword,
-      newPassword: this.passwordForm.value.newPassword
-    };
-
-    this.profileService.changeMyPassword(request).subscribe({
-      next: () => {
-        this.isChangingPassword = false;
-        this.passwordSuccessMessage = 'Password changed successfully.';
-        this.passwordForm.reset();
-      },
-      error: (error) => {
-        this.isChangingPassword = false;
-        this.passwordErrorMessage = this.parseBackendError(error);
-      }
-    });
-  }
-
-  get detailsControls() {
-    return this.editDetailsForm.controls;
-  }
-
-  get passwordControls() {
-    return this.passwordForm.controls;
-  }
-
-  get hasPasswordMismatch(): boolean {
-    return (
-      !!this.passwordForm.hasError('passwordMismatch') &&
-      !!this.passwordForm.get('confirmNewPassword')?.touched
-    );
-  }
-
-  getAccountTypeLabel(): string {
-    if (this.profile?.accountType === 'STAFF') {
-      return 'Staff Personnel';
-    }
-    if (this.profile?.accountType === 'CUSTOMER') {
-      return 'Cardholder Account';
-    }
-    return 'Standard Account';
-  }
-
-  private parseBackendError(error: any): string {
-    if (error.status === 0) {
-      return 'Cannot connect to backend server. Please verify that the server is running.';
-    }
-
-    if (error.status === 400) {
-      if (error.error && error.error.validationErrors) {
-        const messages = Object.values(error.error.validationErrors).join(', ');
-        return messages || 'Invalid input provided.';
-      }
-      if (error.error && error.error.message) {
-        return error.error.message;
-      }
-      return 'Invalid request. Please check your submission.';
-    }
-
-    if (error.status === 401) {
-      return 'Session expired or unauthorized. Please log in again to continue.';
-    }
-
-    if (error.error && error.error.message) {
-      return error.error.message;
-    }
-
-    return 'An unexpected error occurred. Please try again.';
   }
 }

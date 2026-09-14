@@ -1,0 +1,17 @@
+.register-card {
+  max-width: 650px;
+  width: 100%;
+}
+
+.brand-badge {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: var(--cn-primary-light, #f4eef3);
+}
+
+.form-error {
+  color: #dc3545;
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+}

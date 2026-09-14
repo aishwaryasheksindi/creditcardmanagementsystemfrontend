@@ -4,7 +4,7 @@ import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { AuthService } from '../../../core/services/auth.service';
 import { CardService } from '../../../core/services/card.service';
 import { TransactionService } from '../../../core/services/transaction.service';
-import { Card, CardStatus } from '../../../core/models/card.model';
+import { Card, CardStatus, CardActivationOtpResponse } from '../../../core/models/card.model';
 import { Transaction } from '../../../core/models/transaction.model';
 import { maskCardReference } from '../../../shared/utils/format';
 
@@ -30,7 +30,15 @@ export class CardDetailsComponent implements OnInit {
   @ViewChild('blockModal') blockModalRef!: TemplateRef<unknown>;
   @ViewChild('setPinModal') setPinModalRef!: TemplateRef<unknown>;
   @ViewChild('verifyPinModal') verifyPinModalRef!: TemplateRef<unknown>;
+  @ViewChild('activateModal') activateModalRef!: TemplateRef<unknown>;
   private activeModal: NgbModalRef | null = null;
+
+  // Activation state
+  activationOtpInput: string = '';
+  activationOtpResponse: CardActivationOtpResponse | null = null;
+  isRequestingOtp: boolean = false;
+  isActivatingCard: boolean = false;
+  activationErrorMessage: string | null = null;
 
   // Block Card state
   blockReason: string = 'Suspected unauthorized activity';
@@ -287,6 +295,85 @@ export class CardDetailsComponent implements OnInit {
     }
   }
 
+  // --- Activation Workflow ---
+  startActivation(): void {
+    if (!this.cardId) return;
+    this.isRequestingOtp = true;
+    this.activationErrorMessage = null;
+    this.activationOtpInput = '';
+
+    this.cardService.requestActivationOtp(this.cardId).subscribe({
+      next: (resp) => {
+        this.ngZone.run(() => {
+          this.isRequestingOtp = false;
+          this.activationOtpResponse = resp;
+          this.activeModal = this.modalService.open(this.activateModalRef, {
+            centered: true,
+            backdrop: 'static'
+          });
+          this.cdr.markForCheck();
+        });
+      },
+      error: (err) => {
+        this.ngZone.run(() => {
+          this.isRequestingOtp = false;
+          this.cardErrorMessage = err.error?.message || 'Failed to request activation OTP. Please try again.';
+          this.cdr.markForCheck();
+        });
+      }
+    });
+  }
+
+  resendActivationOtp(): void {
+    if (!this.cardId) return;
+    this.isRequestingOtp = true;
+    this.activationErrorMessage = null;
+
+    this.cardService.requestActivationOtp(this.cardId).subscribe({
+      next: (resp) => {
+        this.ngZone.run(() => {
+          this.isRequestingOtp = false;
+          this.activationOtpResponse = resp;
+          this.cdr.markForCheck();
+        });
+      },
+      error: (err) => {
+        this.ngZone.run(() => {
+          this.isRequestingOtp = false;
+          this.activationErrorMessage = err.error?.message || 'Failed to resend activation OTP.';
+          this.cdr.markForCheck();
+        });
+      }
+    });
+  }
+
+  confirmActivation(): void {
+    if (!this.cardId || !this.activationOtpInput.trim()) return;
+
+    this.isActivatingCard = true;
+    this.activationErrorMessage = null;
+
+    this.cardService.activateCard(this.cardId, this.activationOtpInput.trim()).subscribe({
+      next: (updatedCard) => {
+        this.ngZone.run(() => {
+          this.isActivatingCard = false;
+          this.card = updatedCard;
+          this.dismissModal();
+          this.pinSuccessMessage = 'Card activated successfully! Please set your 4-digit card PIN now.';
+          this.openSetPinModal();
+          this.cdr.markForCheck();
+        });
+      },
+      error: (err) => {
+        this.ngZone.run(() => {
+          this.isActivatingCard = false;
+          this.activationErrorMessage = err.error?.message || 'Invalid or expired OTP. Please verify and try again.';
+          this.cdr.markForCheck();
+        });
+      }
+    });
+  }
+
   goBack(): void {
     this.router.navigate(['/app/cards']);
   }
@@ -301,6 +388,8 @@ export class CardDetailsComponent implements OnInit {
     switch (status) {
       case 'ACTIVE':
         return 'bg-success text-white';
+      case 'INACTIVE':
+        return 'bg-warning text-dark';
       case 'BLOCKED':
         return 'bg-danger text-white';
       case 'EXPIRED':

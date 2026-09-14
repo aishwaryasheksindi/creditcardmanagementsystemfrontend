@@ -1,0 +1,218 @@
+<div class="profile-edit-feature container-fluid px-0">
+  <app-page-header
+    title="Update Profile"
+    subtitle="Manage your contact information and security credentials."
+    badgeText="Profile Settings">
+    <div header-actions>
+      <button type="button" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2" (click)="goToViewProfile()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+        Back to My Profile
+      </button>
+    </div>
+  </app-page-header>
+
+  <!-- Loading State -->
+  <div class="my-4" *ngIf="isLoading">
+    <app-loading-spinner message="Loading your profile settings..."></app-loading-spinner>
+  </div>
+
+  <!-- Error State -->
+  <div class="my-4" *ngIf="loadErrorMessage && !isLoading">
+    <app-error-state
+      title="Unable to Load Profile"
+      [message]="loadErrorMessage"
+      (retry)="loadData()">
+    </app-error-state>
+  </div>
+
+  <div *ngIf="!isLoading && !loadErrorMessage">
+    <!-- Notice Banner about Immutable KYC & Identity fields -->
+    <div class="alert alert-info d-flex align-items-start gap-3 mb-4 rounded-3" role="alert" *ngIf="isCustomer">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="flex-shrink-0 mt-1">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="16" x2="12" y2="12"></line>
+        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+      </svg>
+      <div>
+        <strong>Verified Bank Record Notice:</strong>
+        <p class="mb-0 small text-secondary">
+          In accordance with banking regulations, core identification attributes (Full Legal Name, Date of Birth, Branch, and KYC Status) are permanently linked to your verified records. Only communication contact details and login credentials can be updated online. To modify verified identity attributes, please visit your home branch.
+        </p>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <!-- Contact Information Card -->
+      <div class="col-12 col-lg-6">
+        <app-card-container [borderAccent]="true" title="Contact Information" subtitle="Update your verified email address and mobile phone number">
+          <!-- Success / Error Alerts -->
+          <div *ngIf="contactSuccessMessage" class="alert alert-success py-2 px-3 small d-flex align-items-center justify-content-between mb-3" role="alert">
+            <span>{{ contactSuccessMessage }}</span>
+            <button type="button" class="btn-close btn-close-white small" (click)="contactSuccessMessage = null"></button>
+          </div>
+
+          <div *ngIf="contactErrorMessage" class="alert alert-danger py-2 px-3 small d-flex align-items-center justify-content-between mb-3" role="alert">
+            <span>{{ contactErrorMessage }}</span>
+            <button type="button" class="btn-close small" (click)="contactErrorMessage = null"></button>
+          </div>
+
+          <form [formGroup]="contactForm" (ngSubmit)="onUpdateContact()" novalidate class="d-flex flex-column gap-3">
+            <!-- Email -->
+            <div class="form-group mb-0">
+              <label class="form-label fw-semibold small" for="editEmail">Email Address <span class="text-danger">*</span></label>
+              <input
+                type="email"
+                id="editEmail"
+                formControlName="email"
+                class="form-control"
+                [class.is-invalid]="contactControls['email'].touched && contactControls['email'].invalid"
+                placeholder="name@example.com" />
+              <div *ngIf="contactControls['email'].touched && contactControls['email'].errors" class="invalid-feedback">
+                <span *ngIf="contactControls['email'].errors['required']">Email is required.</span>
+                <span *ngIf="contactControls['email'].errors['email']">Please enter a valid email address.</span>
+              </div>
+              <small class="form-text text-muted">Used for e-statements, OTPs, and transaction notifications.</small>
+            </div>
+
+            <!-- Phone Number -->
+            <div class="form-group mb-0">
+              <label class="form-label fw-semibold small" for="editPhone">Mobile Phone Number <span class="text-danger">*</span></label>
+              <div class="input-group">
+                <span class="input-group-text">+91</span>
+                <input
+                  type="text"
+                  id="editPhone"
+                  formControlName="phoneNumber"
+                  class="form-control font-monospace"
+                  [class.is-invalid]="contactControls['phoneNumber'].touched && contactControls['phoneNumber'].invalid"
+                  placeholder="9876543210"
+                  maxlength="10" />
+              </div>
+              <div *ngIf="contactControls['phoneNumber'].touched && contactControls['phoneNumber'].errors" class="invalid-feedback d-block">
+                <span *ngIf="contactControls['phoneNumber'].errors['required']">Phone number is required.</span>
+                <span *ngIf="contactControls['phoneNumber'].errors['pattern']">Must be a valid 10-digit Indian mobile number (starting with 6, 7, 8, or 9).</span>
+              </div>
+              <small class="form-text text-muted">Primary mobile number for SMS OTP alerts and 2FA authentication.</small>
+            </div>
+
+            <button
+              type="submit"
+              class="btn btn-primary mt-2 d-inline-flex align-items-center justify-content-center gap-2"
+              [disabled]="isUpdatingContact || contactForm.pristine || contactForm.invalid">
+              <span *ngIf="isUpdatingContact" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+              {{ isUpdatingContact ? 'Saving Changes...' : 'Save Contact Details' }}
+            </button>
+          </form>
+        </app-card-container>
+      </div>
+
+      <!-- Password Change Card -->
+      <div class="col-12 col-lg-6">
+        <app-card-container [borderAccent]="false" title="Security & Password" subtitle="Change your account password regularly to protect your account">
+          <!-- Success / Error Alerts -->
+          <div *ngIf="passwordSuccessMessage" class="alert alert-success py-2 px-3 small d-flex align-items-center justify-content-between mb-3" role="alert">
+            <span>{{ passwordSuccessMessage }}</span>
+            <button type="button" class="btn-close small" (click)="passwordSuccessMessage = null"></button>
+          </div>
+
+          <div *ngIf="passwordErrorMessage" class="alert alert-danger py-2 px-3 small d-flex align-items-center justify-content-between mb-3" role="alert">
+            <span>{{ passwordErrorMessage }}</span>
+            <button type="button" class="btn-close small" (click)="passwordErrorMessage = null"></button>
+          </div>
+
+          <form [formGroup]="passwordForm" (ngSubmit)="onChangePassword()" novalidate class="d-flex flex-column gap-3">
+            <!-- Current Password -->
+            <div class="form-group mb-0">
+              <label class="form-label fw-semibold small" for="currentPassword">Current Password <span class="text-danger">*</span></label>
+              <input
+                type="password"
+                id="currentPassword"
+                formControlName="currentPassword"
+                class="form-control"
+                [class.is-invalid]="passwordControls['currentPassword'].touched && passwordControls['currentPassword'].invalid"
+                placeholder="Enter existing password" />
+              <div *ngIf="passwordControls['currentPassword'].touched && passwordControls['currentPassword'].errors" class="invalid-feedback">
+                <span *ngIf="passwordControls['currentPassword'].errors['required']">Current password is required.</span>
+              </div>
+            </div>
+
+            <!-- New Password -->
+            <div class="form-group mb-0">
+              <label class="form-label fw-semibold small" for="newPassword">New Password <span class="text-danger">*</span></label>
+              <input
+                type="password"
+                id="newPassword"
+                formControlName="newPassword"
+                class="form-control"
+                [class.is-invalid]="passwordControls['newPassword'].touched && passwordControls['newPassword'].invalid"
+                placeholder="Min. 8 chars, mixed case, digit & symbol" />
+              <div *ngIf="passwordControls['newPassword'].touched && passwordControls['newPassword'].errors" class="invalid-feedback">
+                <span *ngIf="passwordControls['newPassword'].errors['required']">New password is required.</span>
+                <span *ngIf="passwordControls['newPassword'].errors['minlength']">Must be at least 8 characters.</span>
+                <span *ngIf="passwordControls['newPassword'].errors['pattern']">Must contain at least 1 uppercase, 1 lowercase, 1 digit, and 1 special symbol.</span>
+              </div>
+            </div>
+
+            <!-- Confirm New Password -->
+            <div class="form-group mb-0">
+              <label class="form-label fw-semibold small" for="confirmNewPassword">Confirm New Password <span class="text-danger">*</span></label>
+              <input
+                type="password"
+                id="confirmNewPassword"
+                formControlName="confirmNewPassword"
+                class="form-control"
+                [class.is-invalid]="passwordControls['confirmNewPassword'].touched && (passwordControls['confirmNewPassword'].invalid || hasPasswordMismatch)"
+                placeholder="Re-enter new password" />
+              <div *ngIf="hasPasswordMismatch" class="invalid-feedback d-block">
+                <span>Passwords do not match.</span>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              class="btn btn-outline-primary mt-2 d-inline-flex align-items-center justify-content-center gap-2"
+              [disabled]="isChangingPassword || passwordForm.invalid">
+              <span *ngIf="isChangingPassword" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+              {{ isChangingPassword ? 'Updating Password...' : 'Change Password' }}
+            </button>
+          </form>
+        </app-card-container>
+      </div>
+
+      <!-- Immutable Customer Attributes (Read-only Reference) -->
+      <div class="col-12" *ngIf="isCustomer && customer">
+        <app-card-container [borderAccent]="false" title="Verified Banking Records (Read-Only)" subtitle="Official identification records verified during KYC onboarding">
+          <div class="row g-3">
+            <div class="col-12 col-md-4">
+              <label class="form-label small text-muted mb-1">Full Legal Name</label>
+              <input type="text" class="form-control readonly-highlight" [value]="customer.name" disabled readonly>
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label small text-muted mb-1">Date of Birth</label>
+              <input type="text" class="form-control readonly-highlight font-monospace" [value]="customer.dateOfBirth | date:'mediumDate'" disabled readonly>
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label small text-muted mb-1">Home Branch Code</label>
+              <input type="text" class="form-control readonly-highlight font-monospace" [value]="customer.branchCode || 'CN8080'" disabled readonly>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label small text-muted mb-1">Registered Residential Address</label>
+              <input type="text" class="form-control readonly-highlight" [value]="customer.address" disabled readonly>
+            </div>
+            <div class="col-12 col-md-3">
+              <label class="form-label small text-muted mb-1">Employment</label>
+              <input type="text" class="form-control readonly-highlight" [value]="customer.employment" disabled readonly>
+            </div>
+            <div class="col-12 col-md-3">
+              <label class="form-label small text-muted mb-1">Income Bracket</label>
+              <input type="text" class="form-control readonly-highlight" [value]="customer.incomeRange" disabled readonly>
+            </div>
+          </div>
+        </app-card-container>
+      </div>
+    </div>
+  </div>
+</div>

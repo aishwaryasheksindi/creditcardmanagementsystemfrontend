@@ -1,4 +1,4 @@
-﻿.auth-page-container {
+.auth-page-container {
   background-color: var(--background-color);
 
   .auth-card {
@@ -20,5 +20,16 @@
         letter-spacing: 0.01em;
       }
     }
+  }
+
+  .modal-backdrop-custom {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(4px);
+    z-index: 1050;
   }
 }

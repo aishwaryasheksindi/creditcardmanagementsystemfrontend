@@ -1,4 +1,4 @@
-﻿import { Component, OnInit, NgZone, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, NgZone, ChangeDetectorRef } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
@@ -14,6 +14,7 @@ export class AuthComponent implements OnInit {
   isLoading: boolean = false;
   errorMessage: string | null = null;
   infoMessage: string | null = null;
+  showForgotPasswordModal: boolean = false;
   private returnUrl: string = '/app/dashboard';
 
   constructor(
@@ -117,5 +118,13 @@ export class AuthComponent implements OnInit {
     } else {
       this.errorMessage = 'Authentication error encountered. Please try again.';
     }
+  }
+
+  openForgotPasswordModal(): void {
+    this.showForgotPasswordModal = true;
+  }
+
+  closeForgotPasswordModal(): void {
+    this.showForgotPasswordModal = false;
   }
 }

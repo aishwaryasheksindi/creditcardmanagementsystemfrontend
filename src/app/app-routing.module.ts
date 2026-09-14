@@ -10,6 +10,11 @@ const routes: Routes = [
     loadChildren: () => import('./features/auth/auth.module').then(m => m.AuthModule)
   },
   {
+    path: 'register',
+    redirectTo: 'login/register',
+    pathMatch: 'full'
+  },
+  {
     path: 'app',
     component: MainLayoutComponent,
     canActivate: [AuthGuard],

@@ -1,4 +1,4 @@
-export type CardStatus = 'ACTIVE' | 'BLOCKED' | 'EXPIRED' | 'CLOSED' | 'LOST' | 'STOLEN';
+export type CardStatus = 'INACTIVE' | 'ACTIVE' | 'BLOCKED' | 'EXPIRED' | 'CLOSED' | 'LOST' | 'STOLEN';
 
 export interface Card {
   cardId: string;
@@ -18,4 +18,15 @@ export interface Card {
 export interface CardBlockRequest {
   targetStatus: 'BLOCKED';
   reason: string;
+}
+
+export interface CardActivationOtpResponse {
+  cardId: string;
+  otp: string;
+  expiresAt: string;
+  message: string;
+}
+
+export interface CardActivationRequest {
+  otp: string;
 }

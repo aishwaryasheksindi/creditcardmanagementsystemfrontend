@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, of } from 'rxjs';
 import { tap, shareReplay } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
-import { Customer } from '../models/customer.model';
+import { Customer, CustomerRegistrationRequest } from '../models/customer.model';
 import { AuthService } from './auth.service';
 
 @Injectable({
@@ -40,6 +40,10 @@ export class CustomerService {
       }),
       shareReplay(1)
     );
+  }
+
+  public registerCustomer(registrationDto: CustomerRegistrationRequest): Observable<Customer> {
+    return this.http.post<Customer>(`${this.baseUrl}/customers/register`, registrationDto);
   }
 
   public clearCachedCustomer(): void {

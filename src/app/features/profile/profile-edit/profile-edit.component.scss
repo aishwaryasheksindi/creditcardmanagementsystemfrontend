@@ -1,0 +1,13 @@
+.profile-edit-feature {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.readonly-highlight {
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  cursor: not-allowed;
+}
+
+.form-text {
+  font-size: 0.8rem;
+}

@@ -11,4 +11,18 @@ export interface Customer {
   creditProfile: string | null;
   customerStatus: string;
   userId: string;
+  branchCode?: string;
+}
+
+export interface CustomerRegistrationRequest {
+  username: string;
+  email: string;
+  password: string;
+  name: string;
+  phoneNumber: string;
+  address: string;
+  dateOfBirth: string;
+  employment: string;
+  incomeRange: string;
+  branchCode: string;
 }

@@ -83,6 +83,8 @@ export class CardsComponent implements OnInit {
     switch (status) {
       case 'ACTIVE':
         return 'bg-success text-white';
+      case 'INACTIVE':
+        return 'bg-warning text-dark';
       case 'BLOCKED':
         return 'bg-danger text-white';
       case 'EXPIRED':

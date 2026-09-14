@@ -31,9 +31,9 @@
     </div>
 
     <div *ngIf="customer">
-      <!-- 6 Summary Cards (Only Active Cards is wired to real API; rest are clearly-labeled 'Coming soon' placeholders) -->
+      <!-- 6 Live Metrics Cards -->
       <div class="row g-3 g-md-4 mb-4">
-        <!-- Active Cards (Wired to real backend card count) -->
+        <!-- Active Cards -->
         <div class="col-12 col-sm-6 col-xl-4">
           <app-card-container [borderAccent]="true">
             <div class="metric-card d-flex flex-column gap-1">
@@ -49,72 +49,80 @@
           </app-card-container>
         </div>
 
-        <!-- Available Credit (Coming Soon) -->
+        <!-- Available Credit -->
         <div class="col-12 col-sm-6 col-xl-4">
           <app-card-container [borderAccent]="false">
             <div class="metric-card d-flex flex-column gap-1">
-              <span class="metric-label text-uppercase fw-semibold text-muted">Available Credit</span>
+              <span class="metric-label text-uppercase fw-semibold">Available Credit</span>
               <div class="metric-value-row d-flex align-items-center justify-content-between my-2">
-                <span class="metric-value fs-4 fw-bold text-muted">—</span>
-                <span class="badge bg-secondary-subtle text-secondary border">Coming soon</span>
+                <span class="metric-value fs-4 fw-bold">{{ availableCredit | currency:'INR':'symbol':'1.0-0' }}</span>
+                <span class="badge bg-success-subtle text-success border border-success-subtle">
+                  Limit: {{ totalCreditLimit | currency:'INR':'symbol':'1.0-0' }}
+                </span>
               </div>
-              <p class="metric-desc text-muted mb-0">Credit limit analytics in development</p>
+              <p class="metric-desc text-secondary mb-0">Total available balance across cards</p>
             </div>
           </app-card-container>
         </div>
 
-        <!-- Total Outstanding (Coming Soon) -->
+        <!-- Total Outstanding -->
         <div class="col-12 col-sm-6 col-xl-4">
           <app-card-container [borderAccent]="false">
             <div class="metric-card d-flex flex-column gap-1">
-              <span class="metric-label text-uppercase fw-semibold text-muted">Total Outstanding</span>
+              <span class="metric-label text-uppercase fw-semibold">Total Outstanding</span>
               <div class="metric-value-row d-flex align-items-center justify-content-between my-2">
-                <span class="metric-value fs-4 fw-bold text-muted">—</span>
-                <span class="badge bg-secondary-subtle text-secondary border">Coming soon</span>
+                <span class="metric-value fs-4 fw-bold" [class.text-danger]="totalOutstanding > 0">{{ totalOutstanding | currency:'INR':'symbol':'1.0-0' }}</span>
+                <span class="badge" [ngClass]="totalOutstanding > 0 ? 'bg-warning-subtle text-warning border border-warning-subtle' : 'bg-success-subtle text-success border border-success-subtle'">
+                  {{ totalOutstanding > 0 ? 'Current Balance' : 'Zero Balance' }}
+                </span>
               </div>
-              <p class="metric-desc text-muted mb-0">Statement balance integration pending</p>
+              <p class="metric-desc text-secondary mb-0">Unbilled and billed revolving balance</p>
             </div>
           </app-card-container>
         </div>
 
-        <!-- Payment Due (Coming Soon) -->
+        <!-- Payment Due -->
         <div class="col-12 col-sm-6 col-xl-4">
           <app-card-container [borderAccent]="false">
             <div class="metric-card d-flex flex-column gap-1">
-              <span class="metric-label text-uppercase fw-semibold text-muted">Payment Due</span>
+              <span class="metric-label text-uppercase fw-semibold">Payment Due</span>
               <div class="metric-value-row d-flex align-items-center justify-content-between my-2">
-                <span class="metric-value fs-4 fw-bold text-muted">—</span>
-                <span class="badge bg-secondary-subtle text-secondary border">Coming soon</span>
+                <span class="metric-value fs-4 fw-bold">{{ paymentDueAmount | currency:'INR':'symbol':'1.0-0' }}</span>
+                <span class="badge" [ngClass]="paymentDueDate ? 'bg-danger-subtle text-danger border border-danger-subtle' : 'bg-light text-muted border'">
+                  {{ paymentDueDate ? ('Due ' + (paymentDueDate | date:'mediumDate')) : 'No Due Bill' }}
+                </span>
               </div>
-              <p class="metric-desc text-muted mb-0">Upcoming bill schedule pending</p>
+              <p class="metric-desc text-secondary mb-0">{{ paymentDueDate ? 'Minimum payment due soon' : 'All statements settled' }}</p>
             </div>
           </app-card-container>
         </div>
 
-        <!-- Reward Points (Coming Soon) -->
+        <!-- Reward Points -->
         <div class="col-12 col-sm-6 col-xl-4">
           <app-card-container [borderAccent]="false">
             <div class="metric-card d-flex flex-column gap-1">
-              <span class="metric-label text-uppercase fw-semibold text-muted">Reward Points</span>
+              <span class="metric-label text-uppercase fw-semibold">Reward Points</span>
               <div class="metric-value-row d-flex align-items-center justify-content-between my-2">
-                <span class="metric-value fs-4 fw-bold text-muted">—</span>
-                <span class="badge bg-secondary-subtle text-secondary border">Coming soon</span>
+                <span class="metric-value fs-4 fw-bold">{{ rewardPoints | number:'1.0-0' }}</span>
+                <span class="badge bg-info-subtle text-info border border-info-subtle">Points</span>
               </div>
-              <p class="metric-desc text-muted mb-0">Loyalty redemption system in development</p>
+              <p class="metric-desc text-secondary mb-0">Redeemable across partner merchants</p>
             </div>
           </app-card-container>
         </div>
 
-        <!-- Active EMIs (Coming Soon) -->
+        <!-- Active EMIs -->
         <div class="col-12 col-sm-6 col-xl-4">
           <app-card-container [borderAccent]="false">
             <div class="metric-card d-flex flex-column gap-1">
-              <span class="metric-label text-uppercase fw-semibold text-muted">Active EMIs</span>
+              <span class="metric-label text-uppercase fw-semibold">Active EMIs</span>
               <div class="metric-value-row d-flex align-items-center justify-content-between my-2">
-                <span class="metric-value fs-4 fw-bold text-muted">—</span>
-                <span class="badge bg-secondary-subtle text-secondary border">Coming soon</span>
+                <span class="metric-value fs-4 fw-bold">{{ activeEmisCount }}</span>
+                <span class="badge" [ngClass]="activeEmisCount > 0 ? 'bg-primary-subtle text-primary border border-primary-subtle' : 'bg-light text-muted border'">
+                  {{ activeEmisCount === 1 ? '1 Plan' : activeEmisCount + ' Plans' }}
+                </span>
               </div>
-              <p class="metric-desc text-muted mb-0">Installment management module pending</p>
+              <p class="metric-desc text-secondary mb-0">{{ activeEmisCount > 0 ? 'Monthly installments in progress' : 'No active installment plans' }}</p>
             </div>
           </app-card-container>
         </div>

@@ -1,16 +1,193 @@
-﻿<div class="transactions-feature">
+<div class="transactions-feature container-fluid px-0">
   <app-page-header
     title="Transaction Ledger"
-    subtitle="Real-time stream of card transactions, authorizations, and settlement status."
-    badgeText="Ledger">
+    subtitle="Live transaction history, authorizations, and EMI conversion options."
+    badgeText="Customer Ledger">
+    <div header-actions>
+      <button type="button" class="btn btn-secondary btn-sm d-inline-flex align-items-center gap-2" (click)="loadTransactions(true)" [disabled]="isLoading">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+        </svg>
+        Refresh
+      </button>
+    </div>
   </app-page-header>
 
-  <app-card-container [borderAccent]="true" title="Transaction Ledger Overview">
-    <app-empty-state
-      title="Transaction Ledger Module Ready"
-      message="This foundation module is established and routing is operational. Integration with Spring Boot backend services will occur in subsequent phases."
-      actionLabel="View Dashboard"
-      (actionClicked)="false">
-    </app-empty-state>
-  </app-card-container>
+  <!-- Summary Stats -->
+  <div class="row g-3 g-md-4 mb-4" *ngIf="!isLoading && !errorMessage">
+    <div class="col-12 col-sm-4">
+      <app-card-container [borderAccent]="true">
+        <div class="metric-card d-flex flex-column gap-1">
+          <span class="metric-label text-uppercase fw-semibold">Total Transactions</span>
+          <div class="metric-value-row d-flex align-items-center justify-content-between my-2">
+            <span class="metric-value fs-4 fw-bold">{{ allTransactions.length }}</span>
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
+              {{ filteredTransactions.length }} Filtered
+            </span>
+          </div>
+          <p class="metric-desc text-secondary mb-0">Across all customer credit cards</p>
+        </div>
+      </app-card-container>
+    </div>
+
+    <div class="col-12 col-sm-4">
+      <app-card-container [borderAccent]="false">
+        <div class="metric-card d-flex flex-column gap-1">
+          <span class="metric-label text-uppercase fw-semibold">Settled Spend</span>
+          <div class="metric-value-row d-flex align-items-center justify-content-between my-2">
+            <span class="metric-value fs-4 fw-bold">{{ totalSettledAmount | currency:'INR':'symbol':'1.0-0' }}</span>
+            <span class="badge bg-success-subtle text-success border border-success-subtle">Completed</span>
+          </div>
+          <p class="metric-desc text-secondary mb-0">Total volume of posted purchases</p>
+        </div>
+      </app-card-container>
+    </div>
+
+    <div class="col-12 col-sm-4">
+      <app-card-container [borderAccent]="false">
+        <div class="metric-card d-flex flex-column gap-1">
+          <span class="metric-label text-uppercase fw-semibold">EMI Eligible</span>
+          <div class="metric-value-row d-flex align-items-center justify-content-between my-2">
+            <span class="metric-value fs-4 fw-bold text-primary">{{ emiEligibleCount }}</span>
+            <span class="badge bg-info-subtle text-info border border-info-subtle">≥ ₹3,000</span>
+          </div>
+          <p class="metric-desc text-secondary mb-0">Purchases qualifying for monthly plans</p>
+        </div>
+      </app-card-container>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div class="my-4" *ngIf="isLoading">
+    <app-loading-spinner message="Loading transactions..."></app-loading-spinner>
+  </div>
+
+  <!-- Error State -->
+  <div class="my-4" *ngIf="errorMessage && !isLoading">
+    <app-error-state
+      title="Unable to Load Ledger"
+      [message]="errorMessage"
+      (retry)="loadTransactions(true)">
+    </app-error-state>
+  </div>
+
+  <!-- Filters & Ledger Container -->
+  <div *ngIf="!isLoading && !errorMessage">
+    <app-card-container title="Transaction Records" [subtitle]="'Showing ' + filteredTransactions.length + ' of ' + allTransactions.length + ' transactions'">
+      <!-- Filter Bar -->
+      <div class="row g-3 mb-4 pb-3 border-bottom align-items-end">
+        <!-- Card Selector -->
+        <div class="col-12 col-sm-6 col-md-3" *ngIf="cards.length > 0">
+          <label class="form-label small text-muted mb-1" for="cardFilter">Card</label>
+          <select id="cardFilter" class="form-select form-select-sm" [(ngModel)]="selectedCardId" (ngModelChange)="onFilterChange()">
+            <option value="ALL">All Cards ({{ cards.length }})</option>
+            <option *ngFor="let c of cards" [value]="c.cardId">
+              {{ c.cardReference | maskCard }} ({{ c.cardStatus }})
+            </option>
+          </select>
+        </div>
+
+        <!-- Status Filter -->
+        <div class="col-6 col-sm-3 col-md-2">
+          <label class="form-label small text-muted mb-1" for="statusFilter">Status</label>
+          <select id="statusFilter" class="form-select form-select-sm" [(ngModel)]="selectedStatus" (ngModelChange)="onFilterChange()">
+            <option value="ALL">All Statuses</option>
+            <option value="COMPLETED">Completed</option>
+            <option value="PENDING">Pending</option>
+            <option value="FAILED">Failed</option>
+          </select>
+        </div>
+
+        <!-- Type Filter -->
+        <div class="col-6 col-sm-3 col-md-2">
+          <label class="form-label small text-muted mb-1" for="typeFilter">Type</label>
+          <select id="typeFilter" class="form-select form-select-sm" [(ngModel)]="selectedType" (ngModelChange)="onFilterChange()">
+            <option value="ALL">All Types</option>
+            <option value="PURCHASE">Purchase</option>
+            <option value="REFUND">Refund</option>
+            <option value="PAYMENT">Payment</option>
+          </select>
+        </div>
+
+        <!-- Search Input -->
+        <div class="col-12 col-md-5">
+          <label class="form-label small text-muted mb-1" for="txnSearch">Search</label>
+          <input
+            id="txnSearch"
+            type="text"
+            class="form-control form-control-sm"
+            [(ngModel)]="searchQuery"
+            (ngModelChange)="onFilterChange()"
+            placeholder="Search by ID, location, or merchant...">
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div *ngIf="filteredTransactions.length === 0" class="py-4">
+        <app-empty-state
+          title="No Transactions Found"
+          [message]="allTransactions.length === 0 ? 'No transactions are currently recorded for your cards.' : 'No transactions match the selected filter criteria.'">
+        </app-empty-state>
+      </div>
+
+      <!-- Transactions Ledger Table -->
+      <div *ngIf="filteredTransactions.length > 0" class="table-responsive">
+        <table class="table align-middle table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th scope="col">Date</th>
+              <th scope="col">Transaction ID</th>
+              <th scope="col" *ngIf="cards.length > 1">Card</th>
+              <th scope="col">Type &amp; Details</th>
+              <th scope="col">Status</th>
+              <th scope="col" class="text-end">Amount</th>
+              <th scope="col" class="text-center">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let txn of filteredTransactions">
+              <td class="text-nowrap">
+                <div class="fw-medium">{{ txn.transactionDate | date:'mediumDate' }}</div>
+                <small class="text-muted">{{ txn.transactionDate | date:'shortTime' }}</small>
+              </td>
+              <td class="font-monospace small text-secondary">
+                {{ txn.transactionId }}
+              </td>
+              <td *ngIf="cards.length > 1" class="font-monospace small text-muted">
+                {{ getCardReference(txn.cardId) | maskCard }}
+              </td>
+              <td>
+                <span class="fw-semibold">{{ txn.transactionType }}</span>
+                <div class="text-muted small" *ngIf="txn.transactionLocation">{{ txn.transactionLocation }}</div>
+              </td>
+              <td>
+                <span class="badge" [ngClass]="getTransactionStatusBadge(txn.transactionStatus)">
+                  {{ txn.transactionStatus }}
+                </span>
+              </td>
+              <td class="text-end fw-bold font-monospace">
+                {{ txn.amount | currency:txn.currency:'symbol':'1.2-2' }}
+              </td>
+              <td class="text-center text-nowrap">
+                <button
+                  *ngIf="isEmiEligible(txn)"
+                  type="button"
+                  class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 py-1 px-2"
+                  (click)="convertToEmi(txn.transactionId)"
+                  title="Convert this purchase into manageable monthly installments">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                  </svg>
+                  Convert to EMI
+                </button>
+                <span *ngIf="!isEmiEligible(txn)" class="text-muted small">—</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </app-card-container>
+  </div>
 </div>

@@ -27,7 +27,7 @@ export const NAVIGATION_ITEMS: NavItem[] = [
     label: 'Transactions',
     route: '/app/transactions',
     icon: 'receipt',
-    roles: ['ADMIN', 'BANK_OFFICER']
+    roles: ['ADMIN', 'BANK_OFFICER', 'CUSTOMER']
   },
   {
     id: 'payments',
@@ -55,14 +55,28 @@ export const NAVIGATION_ITEMS: NavItem[] = [
     label: 'EMI',
     route: '/app/emi',
     icon: 'calendar',
-    roles: ['ADMIN', 'BANK_OFFICER']
+    roles: ['ADMIN', 'BANK_OFFICER', 'CUSTOMER']
   },
   {
     id: 'disputes',
     label: 'Disputes',
     route: '/app/disputes',
     icon: 'alert-circle',
-    roles: ['ADMIN', 'CUSTOMER_SERVICE_AGENT']
+    roles: ['ADMIN', 'CUSTOMER_SERVICE_AGENT', 'CUSTOMER']
+  },
+  {
+    id: 'my-profile',
+    label: 'My Profile',
+    route: '/app/profile',
+    icon: 'user',
+    roles: ['CUSTOMER']
+  },
+  {
+    id: 'update-profile',
+    label: 'Update Profile',
+    route: '/app/profile/edit',
+    icon: 'settings',
+    roles: ['CUSTOMER']
   },
   {
     id: 'fraud',

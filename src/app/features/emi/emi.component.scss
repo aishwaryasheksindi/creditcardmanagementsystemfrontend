@@ -1,5 +1,31 @@
-﻿.emi-feature {
+.emi-feature {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-lg);
+}
+
+.ai-recommendation-box {
+  background: linear-gradient(135deg, rgba(92, 45, 86, 0.06) 0%, rgba(212, 175, 55, 0.08) 100%);
+  border: 1px solid rgba(92, 45, 86, 0.15);
+  border-radius: var(--radius-lg, 12px);
+}
+
+.tenure-option-card {
+  border: 2px solid var(--border-color, #e2e8f0);
+  border-radius: var(--radius-md, 8px);
+  background: var(--surface-color, #ffffff);
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+
+  &:hover {
+    border-color: var(--primary-color, #5c2d56);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+
+  &.selected {
+    border-color: var(--primary-color, #5c2d56);
+    background: rgba(92, 45, 86, 0.04);
+    box-shadow: 0 0 0 2px rgba(92, 45, 86, 0.2);
+  }
 }

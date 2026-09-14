@@ -16,6 +16,19 @@
     badgeText="Card Management">
     <div header-actions *ngIf="card && isCustomer" class="d-flex align-items-center gap-2 flex-wrap">
       <button
+        *ngIf="card.cardStatus === 'INACTIVE'"
+        type="button"
+        class="btn btn-warning btn-sm d-inline-flex align-items-center gap-2 fw-semibold"
+        (click)="startActivation()"
+        [disabled]="isRequestingOtp">
+        <span *ngIf="isRequestingOtp" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+        <svg *ngIf="!isRequestingOtp" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+        </svg>
+        {{ isRequestingOtp ? 'Sending OTP...' : 'Activate Card' }}
+      </button>
+
+      <button
         *ngIf="card.cardStatus === 'ACTIVE'"
         type="button"
         class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1"
@@ -98,6 +111,20 @@
 
   <!-- Main Card Details View -->
   <div *ngIf="card && !isLoadingCard" class="d-flex flex-column gap-4">
+    <!-- Inactive Alert Banner -->
+    <div *ngIf="card.cardStatus === 'INACTIVE'" class="alert alert-warning d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-between gap-3 p-3 rounded-3 mb-0" role="alert">
+      <div class="d-flex align-items-center gap-3">
+        <span class="fs-4">⚠️</span>
+        <div>
+          <strong class="d-block">This card is pending activation</strong>
+          <span class="small text-secondary">To unlock transactions and set your security PIN, please complete the one-time OTP verification.</span>
+        </div>
+      </div>
+      <button type="button" class="btn btn-warning btn-sm fw-semibold text-nowrap" (click)="startActivation()" [disabled]="isRequestingOtp">
+        {{ isRequestingOtp ? 'Sending OTP...' : 'Activate Now →' }}
+      </button>
+    </div>
+
     <!-- Card Summary Container -->
     <app-card-container title="Card Information" [borderAccent]="true">
       <div class="row g-4 align-items-center">
@@ -423,6 +450,73 @@
       [disabled]="isSubmittingPin || !verifyPinInput">
       <span *ngIf="isSubmittingPin" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
       {{ isSubmittingPin ? 'Verifying...' : 'Verify' }}
+    </button>
+  </div>
+</ng-template>
+
+<!-- Card Activation OTP Modal -->
+<ng-template #activateModal let-modal>
+  <div class="modal-header border-bottom">
+    <h5 class="modal-title d-flex align-items-center gap-2 text-warning">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+      </svg>
+      Activate Credit Card
+    </h5>
+    <button type="button" class="btn-close" (click)="dismissModal()" aria-label="Close"></button>
+  </div>
+
+  <div class="modal-body">
+    <p class="text-secondary mb-3">
+      Enter the 6-digit One-Time Password (OTP) sent to your registered contact to activate card <strong>{{ card?.cardReference | maskCard }}</strong>.
+    </p>
+
+    <!-- Testing Helper: Display OTP in dev environment when returned by backend -->
+    <div *ngIf="activationOtpResponse?.otp" class="alert alert-info py-2 px-3 small d-flex align-items-center justify-content-between mb-3">
+      <div>
+        <strong>Generated OTP:</strong> <code class="fs-6 fw-bold text-primary">{{ activationOtpResponse?.otp }}</code>
+        <div class="text-muted" style="font-size: 11px;">(Valid for 5 minutes)</div>
+      </div>
+      <button type="button" class="btn btn-sm btn-outline-primary" (click)="activationOtpInput = activationOtpResponse!.otp">
+        Autofill
+      </button>
+    </div>
+
+    <div *ngIf="activationErrorMessage" class="alert alert-danger py-2 px-3 small mb-3">
+      {{ activationErrorMessage }}
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label fw-semibold" for="otpInput">6-Digit Activation OTP <span class="text-danger">*</span></label>
+      <input
+        type="text"
+        id="otpInput"
+        class="form-control font-monospace fs-5 text-center"
+        style="letter-spacing: 0.25em;"
+        [(ngModel)]="activationOtpInput"
+        maxlength="6"
+        placeholder="••••••"
+        autocomplete="one-time-code">
+      <div class="d-flex justify-content-between align-items-center mt-2">
+        <small class="form-text text-muted">Did not receive the OTP?</small>
+        <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none" (click)="resendActivationOtp()" [disabled]="isRequestingOtp">
+          {{ isRequestingOtp ? 'Resending...' : 'Resend OTP' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-footer border-top">
+    <button type="button" class="btn btn-secondary" (click)="dismissModal()" [disabled]="isActivatingCard">
+      Cancel
+    </button>
+    <button
+      type="button"
+      class="btn btn-warning fw-semibold d-inline-flex align-items-center gap-2"
+      (click)="confirmActivation()"
+      [disabled]="isActivatingCard || activationOtpInput.trim().length !== 6">
+      <span *ngIf="isActivatingCard" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+      {{ isActivatingCard ? 'Verifying...' : 'Verify & Activate' }}
     </button>
   </div>
 </ng-template>
