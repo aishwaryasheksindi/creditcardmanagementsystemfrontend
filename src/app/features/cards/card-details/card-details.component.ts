@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, NgZone, ChangeDetectorRef } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { AuthService } from '../../../core/services/auth.service';
@@ -6,6 +6,7 @@ import { CardService } from '../../../core/services/card.service';
 import { TransactionService } from '../../../core/services/transaction.service';
 import { Card, CardStatus } from '../../../core/models/card.model';
 import { Transaction } from '../../../core/models/transaction.model';
+import { maskCardReference } from '../../../shared/utils/format';
 
 @Component({
   selector: 'app-card-details',
@@ -54,6 +55,9 @@ export class CardDetailsComponent implements OnInit {
     private cardService: CardService,
     private transactionService: TransactionService,
     private modalService: NgbModal
+    ,
+    private ngZone: NgZone,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -65,7 +69,10 @@ export class CardDetailsComponent implements OnInit {
         this.loadCardDetails(id);
         this.loadRecentActivity(id);
       } else {
-        this.cardErrorMessage = 'No Card ID provided.';
+        this.ngZone.run(() => {
+          this.cardErrorMessage = 'No Card ID provided.';
+          this.cdr.markForCheck();
+        });
       }
     });
   }
@@ -76,18 +83,24 @@ export class CardDetailsComponent implements OnInit {
 
     this.cardService.getCardById(cardId).subscribe({
       next: (card) => {
-        this.card = card;
-        this.isLoadingCard = false;
+        this.ngZone.run(() => {
+          this.card = card;
+          this.isLoadingCard = false;
+          this.cdr.markForCheck();
+        });
       },
       error: (err) => {
-        this.isLoadingCard = false;
-        if (err.status === 403) {
-          this.cardErrorMessage = 'You do not have permission to view this card.';
-        } else if (err.status === 404) {
-          this.cardErrorMessage = 'Card not found.';
-        } else {
-          this.cardErrorMessage = 'Failed to load card details. Please try again.';
-        }
+        this.ngZone.run(() => {
+          this.isLoadingCard = false;
+          if (err.status === 403) {
+            this.cardErrorMessage = 'You do not have permission to view this card.';
+          } else if (err.status === 404) {
+            this.cardErrorMessage = 'Card not found.';
+          } else {
+            this.cardErrorMessage = 'Failed to load card details. Please try again.';
+          }
+          this.cdr.markForCheck();
+        });
       }
     });
   }
@@ -98,16 +111,22 @@ export class CardDetailsComponent implements OnInit {
 
     this.transactionService.getTransactionsByCard(cardId).subscribe({
       next: (transactions) => {
-        this.transactions = transactions || [];
-        this.isLoadingTransactions = false;
+        this.ngZone.run(() => {
+          this.transactions = transactions || [];
+          this.isLoadingTransactions = false;
+          this.cdr.markForCheck();
+        });
       },
       error: (err) => {
-        this.isLoadingTransactions = false;
-        if (err.status === 403) {
-          this.transactionErrorMessage = 'You do not have permission to view activity for this card.';
-        } else {
-          this.transactionErrorMessage = 'Failed to load card transactions.';
-        }
+        this.ngZone.run(() => {
+          this.isLoadingTransactions = false;
+          if (err.status === 403) {
+            this.transactionErrorMessage = 'You do not have permission to view activity for this card.';
+          } else {
+            this.transactionErrorMessage = 'Failed to load card transactions.';
+          }
+          this.cdr.markForCheck();
+        });
       }
     });
   }
@@ -141,20 +160,26 @@ export class CardDetailsComponent implements OnInit {
 
     this.cardService.blockCard(this.cardId, finalReason).subscribe({
       next: (updatedCard) => {
-        this.isBlocking = false;
-        this.card = updatedCard;
-        this.blockSuccessMessage = 'Card ' + updatedCard.cardReference + ' has been successfully blocked.';
-        this.dismissModal();
+        this.ngZone.run(() => {
+          this.isBlocking = false;
+          this.card = updatedCard;
+          this.blockSuccessMessage = 'Card ' + maskCardReference(updatedCard.cardReference) + ' has been successfully blocked.';
+          this.dismissModal();
+          this.cdr.markForCheck();
+        });
       },
       error: (err) => {
-        this.isBlocking = false;
-        if (err.error?.message) {
-          this.blockErrorMessage = err.error.message;
-        } else if (err.status === 403) {
-          this.blockErrorMessage = 'You do not have permission to block this card.';
-        } else {
-          this.blockErrorMessage = 'Failed to block card. Please try again.';
-        }
+        this.ngZone.run(() => {
+          this.isBlocking = false;
+          if (err.error?.message) {
+            this.blockErrorMessage = err.error.message;
+          } else if (err.status === 403) {
+            this.blockErrorMessage = 'You do not have permission to block this card.';
+          } else {
+            this.blockErrorMessage = 'Failed to block card. Please try again.';
+          }
+          this.cdr.markForCheck();
+        });
       }
     });
   }
@@ -190,13 +215,19 @@ export class CardDetailsComponent implements OnInit {
 
     this.cardService.setPin(this.cardId, this.pinInput).subscribe({
       next: (res) => {
-        this.isSubmittingPin = false;
-        this.pinSuccessMessage = res.message || 'Card PIN set successfully.';
-        this.dismissModal();
+        this.ngZone.run(() => {
+          this.isSubmittingPin = false;
+          this.pinSuccessMessage = res.message || 'Card PIN set successfully.';
+          this.dismissModal();
+          this.cdr.markForCheck();
+        });
       },
       error: (err) => {
-        this.isSubmittingPin = false;
-        this.pinErrorMessage = err.error?.message || 'Failed to set card PIN. Please try again.';
+        this.ngZone.run(() => {
+          this.isSubmittingPin = false;
+          this.pinErrorMessage = err.error?.message || 'Failed to set card PIN. Please try again.';
+          this.cdr.markForCheck();
+        });
       }
     });
   }
@@ -227,18 +258,24 @@ export class CardDetailsComponent implements OnInit {
 
     this.cardService.verifyPin(this.cardId, this.verifyPinInput).subscribe({
       next: (res) => {
-        this.isSubmittingPin = false;
-        this.pinVerificationResult = res.verified;
-        if (res.verified) {
-          this.pinSuccessMessage = 'Card PIN successfully verified!';
-          setTimeout(() => this.dismissModal(), 1500);
-        } else {
-          this.pinErrorMessage = 'Incorrect PIN entered. Please try again.';
-        }
+        this.ngZone.run(() => {
+          this.isSubmittingPin = false;
+          this.pinVerificationResult = res.verified;
+          if (res.verified) {
+            this.pinSuccessMessage = 'Card PIN successfully verified!';
+            setTimeout(() => this.dismissModal(), 1500);
+          } else {
+            this.pinErrorMessage = 'Incorrect PIN entered. Please try again.';
+          }
+          this.cdr.markForCheck();
+        });
       },
       error: (err) => {
-        this.isSubmittingPin = false;
-        this.pinErrorMessage = err.error?.message || 'Failed to verify PIN.';
+        this.ngZone.run(() => {
+          this.isSubmittingPin = false;
+          this.pinErrorMessage = err.error?.message || 'Failed to verify PIN.';
+          this.cdr.markForCheck();
+        });
       }
     });
   }

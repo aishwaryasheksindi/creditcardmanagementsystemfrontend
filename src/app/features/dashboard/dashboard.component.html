@@ -126,14 +126,14 @@
         <div class="col-12 col-lg-8">
           <app-card-container
             title="Recent Transactions"
-            [subtitle]="cards.length === 1 ? 'Latest activity for card ' + cards[0].cardReference : (selectedCard ? 'Activity for card ' + selectedCard.cardReference : 'Recent card transaction preview')">
+            [subtitle]="cards.length === 1 ? 'Latest activity for card ' + (cards[0].cardReference | maskCard) : (selectedCard ? 'Activity for card ' + (selectedCard.cardReference | maskCard) : 'Recent card transaction preview')">
             
             <!-- Card Selector for multiple cards -->
             <div *ngIf="cards.length > 1" class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
               <label for="cardSelect" class="form-label mb-0 small text-muted text-nowrap">View card:</label>
               <select id="cardSelect" class="form-select form-select-sm w-auto" [ngModel]="selectedCard?.cardId" (ngModelChange)="onSelectCard($event)">
                 <option *ngFor="let c of cards" [value]="c.cardId">
-                  {{ c.cardReference }} ({{ c.cardStatus }})
+                  {{ c.cardReference | maskCard }} ({{ c.cardStatus }})
                 </option>
               </select>
             </div>
@@ -221,7 +221,7 @@
                     </div>
                     <span class="badge" [ngClass]="getCardStatusBadge(cards[0].cardStatus)">{{ cards[0].cardStatus }}</span>
                   </div>
-                  <div class="card-ref-number font-monospace fs-5 fw-bold mb-3">{{ cards[0].cardReference }}</div>
+                  <div class="card-ref-number font-monospace fs-5 fw-bold mb-3">{{ cards[0].cardReference | maskCard }}</div>
                   <div class="row g-2 small text-secondary">
                     <div class="col-6">
                       <span class="d-block text-muted">Available</span>
@@ -249,7 +249,7 @@
                       </div>
                       <span class="badge" [ngClass]="getCardStatusBadge(card.cardStatus)">{{ card.cardStatus }}</span>
                     </div>
-                    <div class="card-ref-number font-monospace fs-6 fw-bold mb-2">{{ card.cardReference }}</div>
+                    <div class="card-ref-number font-monospace fs-6 fw-bold mb-2">{{ card.cardReference | maskCard }}</div>
                     <div class="row g-2 small text-secondary">
                       <div class="col-6">
                         <span class="d-block text-muted">Available</span>

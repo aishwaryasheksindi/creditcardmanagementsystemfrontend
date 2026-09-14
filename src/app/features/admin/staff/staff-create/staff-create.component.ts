@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, NgZone, ChangeDetectorRef } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { StaffService } from '../../../../core/services/staff.service';
@@ -27,6 +27,9 @@ export class StaffCreateComponent implements OnInit {
     private fb: FormBuilder,
     private staffService: StaffService,
     private router: Router
+    ,
+    private ngZone: NgZone,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -80,24 +83,30 @@ export class StaffCreateComponent implements OnInit {
 
     this.staffService.createStaff(formValue).subscribe({
       next: (created) => {
-        this.isSubmitting = false;
-        this.successMessage = `Staff member ${created.empName} (ID: ${created.staffId}) registered successfully!`;
-        setTimeout(() => {
-          this.router.navigate(['/app/admin/staff']);
-        }, 1200);
+        this.ngZone.run(() => {
+          this.isSubmitting = false;
+          this.successMessage = `Staff member ${created.empName} (ID: ${created.staffId}) registered successfully!`;
+          this.cdr.markForCheck();
+          setTimeout(() => {
+            this.router.navigate(['/app/admin/staff']);
+          }, 1200);
+        });
       },
       error: (err) => {
-        this.isSubmitting = false;
-        if (err?.error?.message) {
-          this.serverError = err.error.message;
-        } else if (err?.status === 404) {
-          this.serverError = 'User not found. Please ensure the User ID exists in the system before creating staff profile.';
-        } else if (err?.status === 400 && err?.error?.errors) {
-          const details = Object.values(err.error.errors).join(', ');
-          this.serverError = `Validation failed: ${details}`;
-        } else {
-          this.serverError = 'An error occurred while creating the staff record. Please try again.';
-        }
+        this.ngZone.run(() => {
+          this.isSubmitting = false;
+          if (err?.error?.message) {
+            this.serverError = err.error.message;
+          } else if (err?.status === 404) {
+            this.serverError = 'User not found. Please ensure the User ID exists in the system before creating staff profile.';
+          } else if (err?.status === 400 && err?.error?.errors) {
+            const details = Object.values(err.error.errors).join(', ');
+            this.serverError = `Validation failed: ${details}`;
+          } else {
+            this.serverError = 'An error occurred while creating the staff record. Please try again.';
+          }
+          this.cdr.markForCheck();
+        });
       }
     });
   }

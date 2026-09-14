@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, NgZone, ChangeDetectorRef } from '@angular/core';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { StaffService } from '../../core/services/staff.service';
@@ -19,6 +19,9 @@ export class AdminComponent implements OnInit {
   constructor(
     private staffService: StaffService,
     private auditLogService: AuditLogService
+    ,
+    private ngZone: NgZone,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -34,13 +37,19 @@ export class AdminComponent implements OnInit {
       logs: this.auditLogService.getAllAuditLogs().pipe(catchError(() => of([])))
     }).subscribe({
       next: (res) => {
-        this.totalStaff = res.staff.length;
-        this.totalAuditLogs = res.logs.length;
-        this.isLoading = false;
+        this.ngZone.run(() => {
+          this.totalStaff = res.staff.length;
+          this.totalAuditLogs = res.logs.length;
+          this.isLoading = false;
+          this.cdr.markForCheck();
+        });
       },
       error: () => {
-        this.hasError = true;
-        this.isLoading = false;
+        this.ngZone.run(() => {
+          this.hasError = true;
+          this.isLoading = false;
+          this.cdr.markForCheck();
+        });
       }
     });
   }

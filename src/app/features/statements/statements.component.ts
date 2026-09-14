@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, NgZone, ChangeDetectorRef } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { forkJoin, of } from 'rxjs';
@@ -9,6 +9,7 @@ import { CardService } from '../../core/services/card.service';
 import { StatementService } from '../../core/services/statement.service';
 import { Statement, StatementItem } from '../../core/models/statement.model';
 import { Card } from '../../core/models/card.model';
+import { maskCardReference } from '../../shared/utils/format';
 import { Customer } from '../../core/models/customer.model';
 
 @Component({
@@ -46,7 +47,9 @@ export class StatementsComponent implements OnInit {
     private statementService: StatementService,
     private modalService: NgbModal,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private ngZone: NgZone,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -75,27 +78,35 @@ export class StatementsComponent implements OnInit {
         })
       ).subscribe({
         next: (cards) => {
-          this.cards = cards;
-          this.cardMap.clear();
-          cards.forEach(c => this.cardMap.set(c.cardId, c));
-          this.isLoadingCards = false;
+          this.ngZone.run(() => {
+            this.cards = cards;
+            this.cardMap.clear();
+            cards.forEach(c => this.cardMap.set(c.cardId, c));
+            this.isLoadingCards = false;
 
-          // Check route query param for pre-selection
-          this.route.queryParams.subscribe(params => {
-            const paramCardId = params['cardId'];
-            if (paramCardId && this.cardMap.has(paramCardId)) {
-              this.selectedCardId = paramCardId;
-            } else if (cards.length > 0) {
-              this.selectedCardId = cards[0].cardId;
-            }
-            if (this.selectedCardId) {
-              this.loadStatementsForCard(this.selectedCardId);
-            }
+            // Check route query param for pre-selection
+            this.route.queryParams.subscribe(params => {
+              const paramCardId = params['cardId'];
+              if (paramCardId && this.cardMap.has(paramCardId)) {
+                this.selectedCardId = paramCardId;
+              } else if (cards.length > 0) {
+                this.selectedCardId = cards[0].cardId;
+              }
+              if (this.selectedCardId) {
+                this.loadStatementsForCard(this.selectedCardId);
+              }
+              this.cdr.markForCheck();
+            });
+
+            this.cdr.markForCheck();
           });
         },
         error: () => {
-          this.isLoadingCards = false;
-          this.errorMessage = 'Failed to load card data.';
+          this.ngZone.run(() => {
+            this.isLoadingCards = false;
+            this.errorMessage = 'Failed to load card data.';
+            this.cdr.markForCheck();
+          });
         }
       });
     } else {
@@ -105,16 +116,22 @@ export class StatementsComponent implements OnInit {
         catchError(() => of([] as Statement[]))
       ).subscribe({
         next: (allStatements) => {
-          this.statements = allStatements.sort((a, b) => 
-            new Date(b.statementDate).getTime() - new Date(a.statementDate).getTime()
-          );
-          this.isLoadingStatements = false;
-          this.isLoadingCards = false;
+          this.ngZone.run(() => {
+            this.statements = allStatements.sort((a, b) => 
+              new Date(b.statementDate).getTime() - new Date(a.statementDate).getTime()
+            );
+            this.isLoadingStatements = false;
+            this.isLoadingCards = false;
+            this.cdr.markForCheck();
+          });
         },
         error: () => {
-          this.isLoadingStatements = false;
-          this.isLoadingCards = false;
-          this.errorMessage = 'Failed to load statements.';
+          this.ngZone.run(() => {
+            this.isLoadingStatements = false;
+            this.isLoadingCards = false;
+            this.errorMessage = 'Failed to load statements.';
+            this.cdr.markForCheck();
+          });
         }
       });
     }
@@ -134,14 +151,20 @@ export class StatementsComponent implements OnInit {
       catchError(() => of([] as Statement[]))
     ).subscribe({
       next: (statements) => {
-        this.statements = statements.sort((a, b) => 
-          new Date(b.statementDate).getTime() - new Date(a.statementDate).getTime()
-        );
-        this.isLoadingStatements = false;
+        this.ngZone.run(() => {
+          this.statements = statements.sort((a, b) => 
+            new Date(b.statementDate).getTime() - new Date(a.statementDate).getTime()
+          );
+          this.isLoadingStatements = false;
+          this.cdr.markForCheck();
+        });
       },
       error: () => {
-        this.isLoadingStatements = false;
-        this.errorMessage = 'Failed to load statements for selected card.';
+        this.ngZone.run(() => {
+          this.isLoadingStatements = false;
+          this.errorMessage = 'Failed to load statements for selected card.';
+          this.cdr.markForCheck();
+        });
       }
     });
   }
@@ -152,7 +175,7 @@ export class StatementsComponent implements OnInit {
 
   getCardReference(cardId: string): string {
     const card = this.cardMap.get(cardId);
-    return card ? card.cardReference : cardId;
+    return card ? maskCardReference(card.cardReference) : cardId;
   }
 
   // --- Statement Breakdown Modal ---
@@ -175,11 +198,17 @@ export class StatementsComponent implements OnInit {
       })
     ).subscribe({
       next: (items) => {
-        this.statementItems = items;
-        this.isLoadingItems = false;
+        this.ngZone.run(() => {
+          this.statementItems = items;
+          this.isLoadingItems = false;
+          this.cdr.markForCheck();
+        });
       },
       error: () => {
-        this.isLoadingItems = false;
+        this.ngZone.run(() => {
+          this.isLoadingItems = false;
+          this.cdr.markForCheck();
+        });
       }
     });
   }
@@ -187,17 +216,22 @@ export class StatementsComponent implements OnInit {
   downloadStatement(statement: Statement): void {
     this.statementService.downloadStatement(statement.statementId).subscribe({
       next: (data) => {
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
-        const downloadAnchor = document.createElement('a');
-        downloadAnchor.setAttribute("href", dataStr);
-        downloadAnchor.setAttribute("download", `Statement_${statement.statementId}_${statement.statementDate}.json`);
-        document.body.appendChild(downloadAnchor);
-        downloadAnchor.click();
-        downloadAnchor.remove();
+        this.ngZone.run(() => {
+          const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
+          const downloadAnchor = document.createElement('a');
+          downloadAnchor.setAttribute("href", dataStr);
+          downloadAnchor.setAttribute("download", `Statement_${statement.statementId}_${statement.statementDate}.json`);
+          document.body.appendChild(downloadAnchor);
+          downloadAnchor.click();
+          downloadAnchor.remove();
+          this.cdr.markForCheck();
+        });
       },
       error: () => {
         // Fallback: print view
-        window.print();
+        this.ngZone.run(() => {
+          window.print();
+        });
       }
     });
   }

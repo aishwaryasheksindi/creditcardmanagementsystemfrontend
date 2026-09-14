@@ -85,7 +85,7 @@
           (ngModelChange)="onFilterChange()">
           <option value="ALL">All Cards ({{ cards.length }})</option>
           <option *ngFor="let card of cards" [value]="card.cardId">
-            {{ card.cardReference }} ({{ card.cardStatus }})
+            {{ card.cardReference | maskCard }} ({{ card.cardStatus }})
           </option>
         </select>
       </div>
@@ -214,7 +214,7 @@
         [(ngModel)]="selectedCardId"
         (ngModelChange)="onCardOrTypeChange()">
         <option *ngFor="let card of cards" [value]="card.cardId">
-          {{ card.cardReference }} (Limit: {{ card.creditLimit | currency:'INR':'symbol':'1.0-0' }} | Avail: {{ card.availableLimit | currency:'INR':'symbol':'1.0-0' }})
+          {{ card.cardReference | maskCard }} (Limit: {{ card.creditLimit | currency:'INR':'symbol':'1.0-0' }} | Avail: {{ card.availableLimit | currency:'INR':'symbol':'1.0-0' }})
         </option>
       </select>
     </div>

@@ -13,7 +13,7 @@
           [(ngModel)]="selectedCardId"
           (ngModelChange)="onCardChange()">
           <option *ngFor="let card of cards" [value]="card.cardId">
-            {{ card.cardReference }} ({{ card.cardStatus }})
+            {{ card.cardReference | maskCard }} ({{ card.cardStatus }})
           </option>
         </select>
       </div>
@@ -31,7 +31,7 @@
     <div class="row align-items-center g-3">
       <div class="col-12 col-md-3 border-end-md">
         <span class="text-muted small d-block">Active Statement Card</span>
-        <span class="fs-5 fw-bold font-monospace text-dark">{{ selectedCard.cardReference }}</span>
+        <span class="fs-5 fw-bold font-monospace text-dark">{{ selectedCard.cardReference | maskCard }}</span>
         <span class="badge ms-2" [ngClass]="selectedCard.cardStatus === 'ACTIVE' ? 'bg-success' : 'bg-secondary'">
           {{ selectedCard.cardStatus }}
         </span>

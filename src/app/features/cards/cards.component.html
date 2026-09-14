@@ -64,7 +64,7 @@
             <!-- Card Reference Token (No fake 16-digit card number) -->
             <div class="card-ref-display mb-3">
               <span class="text-muted small d-block mb-1">Card Reference Token</span>
-              <div class="card-token font-monospace fs-5 fw-bold">{{ card.cardReference }}</div>
+              <div class="card-token font-monospace fs-5 fw-bold">{{ card.cardReference | maskCard }}</div>
             </div>
           </div>
 

@@ -1,4 +1,4 @@
-﻿import { Component, OnInit } from '@angular/core';
+﻿import { Component, OnInit, NgZone, ChangeDetectorRef } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
@@ -21,6 +21,9 @@ export class AuthComponent implements OnInit {
     private authService: AuthService,
     private router: Router,
     private route: ActivatedRoute
+    ,
+    private ngZone: NgZone,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -66,12 +69,18 @@ export class AuthComponent implements OnInit {
 
     this.authService.login(credentials).subscribe({
       next: () => {
-        this.isLoading = false;
-        this.router.navigateByUrl(this.returnUrl);
+        this.ngZone.run(() => {
+          this.isLoading = false;
+          this.router.navigateByUrl(this.returnUrl);
+          this.cdr.markForCheck();
+        });
       },
       error: (error) => {
-        this.isLoading = false;
-        this.parseBackendError(error);
+        this.ngZone.run(() => {
+          this.isLoading = false;
+          this.parseBackendError(error);
+          this.cdr.markForCheck();
+        });
       }
     });
   }

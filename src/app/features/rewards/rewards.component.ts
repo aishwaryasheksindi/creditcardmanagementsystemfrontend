@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, NgZone, ChangeDetectorRef } from '@angular/core';
 import { of } from 'rxjs';
 import { switchMap, catchError } from 'rxjs/operators';
 import { AuthService } from '../../core/services/auth.service';
@@ -30,6 +30,9 @@ export class RewardsComponent implements OnInit {
     private authService: AuthService,
     private customerService: CustomerService,
     private rewardService: RewardService
+    ,
+    private ngZone: NgZone,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -60,17 +63,23 @@ export class RewardsComponent implements OnInit {
         })
       ).subscribe({
         next: (reward) => {
-          this.reward = reward;
-          if (reward?.rewardId) {
-            this.loadTransactions(reward.rewardId);
-          } else {
-            this.isLoading = false;
+            this.ngZone.run(() => {
+              this.reward = reward;
+              if (reward?.rewardId) {
+                this.loadTransactions(reward.rewardId);
+              } else {
+                this.isLoading = false;
+              }
+              this.cdr.markForCheck();
+            });
+          },
+          error: () => {
+            this.ngZone.run(() => {
+              this.isLoading = false;
+              this.errorMessage = 'Failed to retrieve loyalty points.';
+              this.cdr.markForCheck();
+            });
           }
-        },
-        error: () => {
-          this.isLoading = false;
-          this.errorMessage = 'Failed to retrieve loyalty points.';
-        }
       });
     } else {
       // Staff view: load all rewards
@@ -78,17 +87,23 @@ export class RewardsComponent implements OnInit {
         catchError(() => of([] as Reward[]))
       ).subscribe({
         next: (rewards) => {
-          if (rewards.length > 0) {
-            this.reward = rewards[0];
-            if (this.reward?.rewardId) {
-              this.loadTransactions(this.reward.rewardId);
+          this.ngZone.run(() => {
+            if (rewards.length > 0) {
+              this.reward = rewards[0];
+              if (this.reward?.rewardId) {
+                this.loadTransactions(this.reward.rewardId);
+              }
             }
-          }
-          this.isLoading = false;
+            this.isLoading = false;
+            this.cdr.markForCheck();
+          });
         },
         error: () => {
-          this.isLoading = false;
-          this.errorMessage = 'Failed to retrieve rewards catalog.';
+          this.ngZone.run(() => {
+            this.isLoading = false;
+            this.errorMessage = 'Failed to retrieve rewards catalog.';
+            this.cdr.markForCheck();
+          });
         }
       });
     }
@@ -99,14 +114,20 @@ export class RewardsComponent implements OnInit {
       catchError(() => of([] as RewardTransaction[]))
     ).subscribe({
       next: (txns) => {
-        this.transactions = txns.sort((a, b) => 
-          new Date(b.transactionDate).getTime() - new Date(a.transactionDate).getTime()
-        );
-        this.applyFilters();
-        this.isLoading = false;
+        this.ngZone.run(() => {
+          this.transactions = txns.sort((a, b) => 
+            new Date(b.transactionDate).getTime() - new Date(a.transactionDate).getTime()
+          );
+          this.applyFilters();
+          this.isLoading = false;
+          this.cdr.markForCheck();
+        });
       },
       error: () => {
-        this.isLoading = false;
+        this.ngZone.run(() => {
+          this.isLoading = false;
+          this.cdr.markForCheck();
+        });
       }
     });
   }
@@ -116,7 +137,10 @@ export class RewardsComponent implements OnInit {
       catchError(() => of([] as RewardRecommendation[]))
     ).subscribe({
       next: (recs) => {
-        this.recommendations = recs;
+        this.ngZone.run(() => {
+          this.recommendations = recs;
+          this.cdr.markForCheck();
+        });
       }
     });
   }

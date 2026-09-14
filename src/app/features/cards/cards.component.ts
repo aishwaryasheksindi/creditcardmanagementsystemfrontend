@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, NgZone, ChangeDetectorRef } from '@angular/core';
 import { Router } from '@angular/router';
 import { switchMap } from 'rxjs/operators';
 import { AuthService } from '../../core/services/auth.service';
@@ -24,6 +24,9 @@ export class CardsComponent implements OnInit {
     private customerService: CustomerService,
     private cardService: CardService,
     private router: Router
+    ,
+    private ngZone: NgZone,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -47,17 +50,23 @@ export class CardsComponent implements OnInit {
       })
     ).subscribe({
       next: (cards) => {
-        this.cards = cards || [];
-        this.isLoading = false;
+        this.ngZone.run(() => {
+          this.cards = cards || [];
+          this.isLoading = false;
+          this.cdr.markForCheck();
+        });
       },
       error: (err) => {
-        this.cards = [];
-        this.isLoading = false;
-        if (err.status === 404) {
-          this.errorMessage = 'No customer profile or cards found for your account.';
-        } else {
-          this.errorMessage = 'Failed to load credit cards. Please try again.';
-        }
+        this.ngZone.run(() => {
+          this.cards = [];
+          this.isLoading = false;
+          if (err.status === 404) {
+            this.errorMessage = 'No customer profile or cards found for your account.';
+          } else {
+            this.errorMessage = 'Failed to load credit cards. Please try again.';
+          }
+          this.cdr.markForCheck();
+        });
       }
     });
   }

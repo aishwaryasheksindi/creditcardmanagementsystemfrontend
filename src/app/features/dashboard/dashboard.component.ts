@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, NgZone, ChangeDetectorRef } from '@angular/core';
 import { Router } from '@angular/router';
 import { switchMap, map } from 'rxjs/operators';
 import { AuthService } from '../../core/services/auth.service';
@@ -32,6 +32,9 @@ export class DashboardComponent implements OnInit {
     private cardService: CardService,
     private transactionService: TransactionService,
     private router: Router
+    ,
+    private ngZone: NgZone,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -54,30 +57,37 @@ export class DashboardComponent implements OnInit {
       })
     ).subscribe({
       next: ({ customer, cards }) => {
-        this.customer = customer;
-        this.cards = cards || [];
-        this.isLoading = false;
+        this.ngZone.run(() => {
+          this.customer = customer;
+          this.cards = cards || [];
+          this.isLoading = false;
 
-        if (this.cards.length > 0) {
-          // If a card was previously selected and still exists, keep it; otherwise default preview to first available card
-          if (!this.selectedCard || !this.cards.some(c => c.cardId === this.selectedCard?.cardId)) {
-            this.selectedCard = this.cards[0];
+          if (this.cards.length > 0) {
+            // If a card was previously selected and still exists, keep it; otherwise default preview to first available card
+            if (!this.selectedCard || !this.cards.some(c => c.cardId === this.selectedCard?.cardId)) {
+              this.selectedCard = this.cards[0];
+            }
+            if (this.selectedCard) {
+              this.loadRecentTransactions(this.selectedCard.cardId);
+            }
+          } else {
+            this.selectedCard = null;
+            this.recentTransactions = [];
           }
-          if (this.selectedCard) {
-            this.loadRecentTransactions(this.selectedCard.cardId);
-          }
-        } else {
-          this.selectedCard = null;
-          this.recentTransactions = [];
-        }
+
+          this.cdr.markForCheck();
+        });
       },
       error: (err) => {
-        this.isLoading = false;
-        if (err.status === 404) {
-          this.errorMessage = 'No customer account linked to your profile.';
-        } else {
-          this.errorMessage = 'Failed to load your account dashboard. Please try again.';
-        }
+        this.ngZone.run(() => {
+          this.isLoading = false;
+          if (err.status === 404) {
+            this.errorMessage = 'No customer account linked to your profile.';
+          } else {
+            this.errorMessage = 'Failed to load your account dashboard. Please try again.';
+          }
+          this.cdr.markForCheck();
+        });
       }
     });
   }

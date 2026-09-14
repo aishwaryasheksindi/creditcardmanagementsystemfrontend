@@ -16,6 +16,7 @@ import { ErrorStateComponent } from './components/error-state/error-state.compon
 import { ConfirmDialogComponent } from './components/confirm-dialog/confirm-dialog.component';
 import { PageHeaderComponent } from './components/page-header/page-header.component';
 import { CardContainerComponent } from './components/card-container/card-container.component';
+import { MaskCardPipe } from './pipes/mask-card.pipe';
 
 @NgModule({
   declarations: [
@@ -28,6 +29,7 @@ import { CardContainerComponent } from './components/card-container/card-contain
   ],
   imports: [
     CommonModule,
+    MaskCardPipe,
     FormsModule,
     ReactiveFormsModule,
     RouterModule,
@@ -53,6 +55,7 @@ import { CardContainerComponent } from './components/card-container/card-contain
     ConfirmDialogComponent,
     PageHeaderComponent,
     CardContainerComponent
+    ,MaskCardPipe
   ]
 })
 export class SharedModule { }

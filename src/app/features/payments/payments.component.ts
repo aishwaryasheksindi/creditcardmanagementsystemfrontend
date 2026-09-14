@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, NgZone, ChangeDetectorRef } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { forkJoin, of } from 'rxjs';
@@ -9,6 +9,7 @@ import { CardService } from '../../core/services/card.service';
 import { PaymentService } from '../../core/services/payment.service';
 import { Payment, PaymentRequest, PaymentStatus } from '../../core/models/payment.model';
 import { Card } from '../../core/models/card.model';
+import { maskCardReference } from '../../shared/utils/format';
 import { Customer } from '../../core/models/customer.model';
 
 @Component({
@@ -56,6 +57,9 @@ export class PaymentsComponent implements OnInit {
     private modalService: NgbModal,
     private route: ActivatedRoute,
     private router: Router
+    ,
+    private ngZone: NgZone,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -89,28 +93,35 @@ export class PaymentsComponent implements OnInit {
         })
       ).subscribe({
         next: (result) => {
-          this.cards = result.cards;
-          this.cardMap.clear();
-          this.cards.forEach(c => this.cardMap.set(c.cardId, c));
+            this.ngZone.run(() => {
+              this.cards = result.cards;
+              this.cardMap.clear();
+              this.cards.forEach(c => this.cardMap.set(c.cardId, c));
 
-          this.payments = result.payments.sort((a, b) => 
-            new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime()
-          );
+              this.payments = result.payments.sort((a, b) => 
+                new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime()
+              );
 
-          // Handle query param pre-selection
-          this.route.queryParams.subscribe(params => {
-            if (params['cardId'] && this.cardMap.has(params['cardId'])) {
-              this.selectedCardFilter = params['cardId'];
-            }
-            this.applyFilters();
-          });
+              // Handle query param pre-selection
+              this.route.queryParams.subscribe(params => {
+                if (params['cardId'] && this.cardMap.has(params['cardId'])) {
+                  this.selectedCardFilter = params['cardId'];
+                }
+                this.applyFilters();
+                this.cdr.markForCheck();
+              });
 
-          this.isLoading = false;
-        },
-        error: () => {
-          this.isLoading = false;
-          this.errorMessage = 'Failed to load payments data.';
-        }
+              this.isLoading = false;
+              this.cdr.markForCheck();
+            });
+          },
+          error: () => {
+            this.ngZone.run(() => {
+              this.isLoading = false;
+              this.errorMessage = 'Failed to load payments data.';
+              this.cdr.markForCheck();
+            });
+          }
       });
     } else {
       // Admin / Staff View
@@ -118,15 +129,21 @@ export class PaymentsComponent implements OnInit {
         catchError(() => of([] as Payment[]))
       ).subscribe({
         next: (payments) => {
-          this.payments = payments.sort((a, b) => 
-            new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime()
-          );
-          this.applyFilters();
-          this.isLoading = false;
+          this.ngZone.run(() => {
+            this.payments = payments.sort((a, b) => 
+              new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime()
+            );
+            this.applyFilters();
+            this.isLoading = false;
+            this.cdr.markForCheck();
+          });
         },
         error: () => {
-          this.isLoading = false;
-          this.errorMessage = 'Failed to load payments data.';
+          this.ngZone.run(() => {
+            this.isLoading = false;
+            this.errorMessage = 'Failed to load payments data.';
+            this.cdr.markForCheck();
+          });
         }
       });
     }
@@ -244,15 +261,21 @@ export class PaymentsComponent implements OnInit {
 
     this.paymentService.addPayment(request).subscribe({
       next: (res) => {
-        this.isSubmittingPayment = false;
-        this.successMessage = `Payment of ₹${res.amount} successfully processed with reference ${res.referenceNumber || res.paymentId}! Card limit has been replenished.`;
-        this.dismissModal();
-        // Refresh data so cards limit & payments list reflect the update
-        this.loadData();
+        this.ngZone.run(() => {
+          this.isSubmittingPayment = false;
+          this.successMessage = `Payment of ₹${res.amount} successfully processed with reference ${res.referenceNumber || res.paymentId}! Card limit has been replenished.`;
+          this.dismissModal();
+          // Refresh data so cards limit & payments list reflect the update
+          this.loadData();
+          this.cdr.markForCheck();
+        });
       },
       error: (err) => {
-        this.isSubmittingPayment = false;
-        this.formErrorMessage = err.error?.message || 'Payment processing failed. Please verify the amount and try again.';
+        this.ngZone.run(() => {
+          this.isSubmittingPayment = false;
+          this.formErrorMessage = err.error?.message || 'Payment processing failed. Please verify the amount and try again.';
+          this.cdr.markForCheck();
+        });
       }
     });
   }
@@ -284,7 +307,7 @@ export class PaymentsComponent implements OnInit {
 
   getCardReference(cardId: string): string {
     const card = this.cardMap.get(cardId);
-    return card ? card.cardReference : cardId;
+    return card ? maskCardReference(card.cardReference) : cardId;
   }
 
   getStatusBadgeClass(status: PaymentStatus | string): string {

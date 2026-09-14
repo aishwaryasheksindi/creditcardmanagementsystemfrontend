@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, NgZone, ChangeDetectorRef } from '@angular/core';
 import { Staff } from '../../../../core/models/staff.model';
 import { StaffService } from '../../../../core/services/staff.service';
 import { UserService } from '../../../../core/services/user.service';
@@ -22,6 +22,9 @@ export class StaffListComponent implements OnInit {
   constructor(
     private staffService: StaffService,
     private userService: UserService
+    ,
+    private ngZone: NgZone,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -38,32 +41,44 @@ export class StaffListComponent implements OnInit {
         if (userIds.length > 0) {
           this.userService.resolveUserRoles(userIds).subscribe({
             next: (roleMap) => {
-              this.staffList = staff.map(s => ({
-                ...s,
-                roleName: roleMap.get(s.userId) || s.empDesignation || 'STAFF'
-              }));
-              this.applyClientFilters();
-              this.isLoading = false;
+              this.ngZone.run(() => {
+                this.staffList = staff.map(s => ({
+                  ...s,
+                  roleName: roleMap.get(s.userId) || s.empDesignation || 'STAFF'
+                }));
+                this.applyClientFilters();
+                this.isLoading = false;
+                this.cdr.markForCheck();
+              });
             },
             error: () => {
               // Gracefully fall back to designations if user lookup has an issue
-              this.staffList = staff.map(s => ({
-                ...s,
-                roleName: s.empDesignation || 'STAFF'
-              }));
-              this.applyClientFilters();
-              this.isLoading = false;
+              this.ngZone.run(() => {
+                this.staffList = staff.map(s => ({
+                  ...s,
+                  roleName: s.empDesignation || 'STAFF'
+                }));
+                this.applyClientFilters();
+                this.isLoading = false;
+                this.cdr.markForCheck();
+              });
             }
           });
         } else {
-          this.staffList = staff;
-          this.applyClientFilters();
-          this.isLoading = false;
+          this.ngZone.run(() => {
+            this.staffList = staff;
+            this.applyClientFilters();
+            this.isLoading = false;
+            this.cdr.markForCheck();
+          });
         }
       },
       error: (err) => {
-        this.isLoading = false;
-        this.errorMessage = err?.error?.message || 'Failed to load staff directory. Please verify your connection.';
+        this.ngZone.run(() => {
+          this.isLoading = false;
+          this.errorMessage = err?.error?.message || 'Failed to load staff directory. Please verify your connection.';
+          this.cdr.markForCheck();
+        });
       }
     });
   }
@@ -82,20 +97,26 @@ export class StaffListComponent implements OnInit {
         const userIds = staff.map(s => s.userId).filter(id => !!id);
         this.userService.resolveUserRoles(userIds).subscribe({
           next: (roleMap) => {
-            this.staffList = staff.map(s => ({
-              ...s,
-              roleName: roleMap.get(s.userId) || s.empDesignation || 'STAFF'
-            }));
-            this.applyClientFilters();
-            this.isLoading = false;
+            this.ngZone.run(() => {
+              this.staffList = staff.map(s => ({
+                ...s,
+                roleName: roleMap.get(s.userId) || s.empDesignation || 'STAFF'
+              }));
+              this.applyClientFilters();
+              this.isLoading = false;
+              this.cdr.markForCheck();
+            });
           },
           error: () => {
-            this.staffList = staff.map(s => ({
-              ...s,
-              roleName: s.empDesignation || 'STAFF'
-            }));
-            this.applyClientFilters();
-            this.isLoading = false;
+            this.ngZone.run(() => {
+              this.staffList = staff.map(s => ({
+                ...s,
+                roleName: s.empDesignation || 'STAFF'
+              }));
+              this.applyClientFilters();
+              this.isLoading = false;
+              this.cdr.markForCheck();
+            });
           }
         });
       },

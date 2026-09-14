@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { HttpErrorInterceptor } from './interceptors/http-error.interceptor';
 import { AuthInterceptor } from './interceptors/auth.interceptor';
+// DevMockInterceptor removed to ensure real backend is used in dev and prod
 
 @NgModule({
   imports: [CommonModule],
